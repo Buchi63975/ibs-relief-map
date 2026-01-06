@@ -13,7 +13,8 @@ function App() {
         const { latitude, longitude } = position.coords;
 
         // バックエンドに現在地を送信して一番近い駅をもらう
-        fetch("http://localhost:5000/api/nearest-station", {
+        fetch("/api/nearest-station", {
+          // 最初の https://... を消して / から始める
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lat: latitude, lng: longitude }),

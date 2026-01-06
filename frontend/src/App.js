@@ -1,61 +1,61 @@
 // frontend/src/App.js
-import React, { useState, useEffect, useCallback } from "react"; // 1. useCallbackを追加
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
-  const [stations, setStations] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentStation, setCurrentStation] = useState(null);
   const [time, setTime] = useState(0);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/stations")
-      .then((res) => res.json())
-      .then((data) => {
-        setStations(data);
-        setTime(data[0].next_time);
-      });
-  }, []);
+    // ブラウザのGPSを監視
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
 
-  // 2. 次の駅に切り替える関数を useCallback で包む
-  const moveToNextStation = useCallback(() => {
-    if (stations.length === 0) return;
-    const nextIndex = (currentIndex + 1) % stations.length;
-    setCurrentIndex(nextIndex);
-    setTime(stations[nextIndex].next_time);
-  }, [stations, currentIndex]); // stations か currentIndex が変わった時だけ作り直す
+        // バックエンドに現在地を送信して一番近い駅をもらう
+        fetch("http://localhost:5000/api/nearest-station", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lat: latitude, lng: longitude }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (currentStation?.name !== data.name) {
+              setCurrentStation(data);
+              setTime(data.next_time);
+            }
+          });
+      },
+      (error) => console.error(error),
+      { enableHighAccuracy: true } // 高精度GPSを使用
+    );
 
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [currentStation]);
+
+  // カウントダウンタイマー
   useEffect(() => {
     const timerId = setInterval(() => {
-      setTime((prevTime) => {
-        if (prevTime <= 1) {
-          moveToNextStation();
-          return 0;
-        }
-        return prevTime - 1;
-      });
+      setTime((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-
     return () => clearInterval(timerId);
-  }, [moveToNextStation]); // 3. 依存関係に moveToNextStation を入れる
+  }, []);
 
-  if (stations.length === 0)
-    return <div className="app-container">読み込み中...</div>;
-
-  const currentStation = stations[currentIndex];
+  if (!currentStation)
+    return <div className="app-container">GPSを取得中...</div>;
 
   return (
     <div className="app-container">
       <div className="countdown-card">
-        <div className="station-name">次は {currentStation.name}</div>
+        <div className="station-name">現在、{currentStation.name} 駅付近</div>
         <div className="timer">
           {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, "0")}
         </div>
         <div className="toilet-info">
-          🚻 改札内トイレ: {currentStation.has_toilet_inside ? "あり" : "なし"}{" "}
-          ({currentStation.stalls}個室)
+          🚻 トイレ個室: {currentStation.stalls}
         </div>
-        <p style={{ marginTop: "20px", color: "#666", fontSize: "0.8rem" }}>
-          ※テスト走行中（0秒になると自動で次の駅へ）
+        <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "20px" }}>
+          移動に合わせて駅名が自動更新されます
         </p>
       </div>
     </div>

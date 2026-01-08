@@ -1,64 +1,85 @@
-// frontend/src/App.js
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
-  const [currentStation, setCurrentStation] = useState(null);
-  const [time, setTime] = useState(0);
+  // --- 1. 状態（データ）の準備 ---
+  const [station, setStation] = useState(null);
+  const [line, setLine] = useState("yamanote");
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // ブラウザのGPSを監視
-    const watchId = navigator.geolocation.watchPosition(
+  const lines = [
+    { id: "yamanote", name: "山手線" },
+    { id: "chuo", name: "中央線快速" },
+    { id: "saikyo", name: "埼京線" },
+    { id: "shonan", name: "湘南新宿" },
+  ];
+
+  // --- 2. GPSを取得してサーバーに送る関数 ---
+  const updateLocation = () => {
+    if (!navigator.geolocation) {
+      setError("お使いのブラウザはGPSに対応していません");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
 
-        // バックエンドに現在地を送信して一番近い駅をもらう
+        // Flaskサーバーに位置情報と現在選択中の路線を送る
         fetch("/api/nearest-station", {
-          // 最初の https://... を消して / から始める
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: latitude, lng: longitude }),
+          body: JSON.stringify({ lat: latitude, lng: longitude, line: line }),
         })
           .then((res) => res.json())
-          .then((data) => {
-            if (currentStation?.name !== data.name) {
-              setCurrentStation(data);
-              setTime(data.next_time);
-            }
-          });
+          .then((data) => setStation(data))
+          .catch((err) => setError("サーバーとの通信に失敗しました"));
       },
-      (error) => console.error(error),
-      { enableHighAccuracy: true } // 高精度GPSを使用
+      () => setError("位置情報の取得を許可してください")
     );
+  };
 
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, [currentStation]);
-
-  // カウントダウンタイマー
+  // 路線が変わるたびに再計算する
   useEffect(() => {
-    const timerId = setInterval(() => {
-      setTime((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timerId);
-  }, []);
+    updateLocation();
+  }, [line]);
 
-  if (!currentStation)
-    return <div className="app-container">GPSを取得中...</div>;
-
+  // --- 3. 画面の見た目 (JSX) ---
   return (
     <div className="app-container">
-      <div className="countdown-card">
-        <div className="station-name">現在、{currentStation.name} 駅付近</div>
-        <div className="timer">
-          {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, "0")}
-        </div>
-        <div className="toilet-info">
-          🚻 トイレ個室: {currentStation.stalls}
-        </div>
-        <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "20px" }}>
-          移動に合わせて駅名が自動更新されます
-        </p>
+      <h1>🚾 間に合え！トイレマップ</h1>
+
+      {/* 路線選択ボタン */}
+      <div className="line-selector">
+        {lines.map((l) => (
+          <button
+            key={l.id}
+            onClick={() => setLine(l.id)}
+            className={line === l.id ? "active" : ""}
+          >
+            {l.name}
+          </button>
+        ))}
       </div>
+
+      {error && <p className="error">{error}</p>}
+
+      {station ? (
+        <div className="station-card">
+          <h2>次は: {station.name}駅</h2>
+          <div className="stalls-info">
+            <span className="number">{station.stalls}</span> 個室あり
+          </div>
+          <p className="line-tag" style={{ color: station.line_color }}>
+            {station.line_name}
+          </p>
+          <button className="update-btn" onClick={updateLocation}>
+            情報を更新
+          </button>
+        </div>
+      ) : (
+        <p>位置情報を取得中...</p>
+      )}
     </div>
   );
 }

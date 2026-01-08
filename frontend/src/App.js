@@ -32,7 +32,9 @@ function App() {
   const [stationId, setStationId] = useState("");
   const [station, setStation] = useState(null);
 
-  const API_BASE_URL = "https://ibs-relief-map.onrender.com";
+  // 【修正】APIの接続先を「自分自身」にする設定
+  const API_BASE_URL =
+    process.env.NODE_ENV === "development" ? "http://localhost:5000" : ""; // 本番環境では空にすることで同じサーバーを見に行くようになります
 
   useEffect(() => {
     axios

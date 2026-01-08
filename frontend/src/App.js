@@ -9,7 +9,7 @@ function App() {
   // --- 状態管理 (State) ---
   const [lines, setLines] = useState([]); // 路線一覧
   const [allStations, setAllStations] = useState([]); // 全駅データ（GPS検索用）
-  const [timeLeft, setTimeLeft] = useState(null); // カウントダウン（秒）
+  const [timeLeft, setTimeLeft] = useState(null); // カウントダウン（ミリ秒単位）
   const [aiMessage, setAiMessage] = useState(""); // Geminiからの励まし
   const [isLoading, setIsLoading] = useState(false); // 読み込み中フラグ
   const [arrivalStation, setArrivalStation] = useState(""); // 到着予定駅
@@ -32,10 +32,17 @@ function App() {
     });
   }, []);
 
-  // --- 2. カウントダウンタイマー ---
+  // --- 2. カウントダウンタイマー (10ミリ秒単位で更新) ---
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
-    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        const nextValue = prev - 10;
+        return nextValue <= 0 ? 0 : nextValue;
+      });
+    }, 10); // 10ミリ秒（0.01秒）ごとに実行
+
     return () => clearInterval(timer);
   }, [timeLeft]);
 
@@ -47,7 +54,7 @@ function App() {
     }
 
     setIsLoading(true);
-    setAiMessage("一番近いトイレを探しています...");
+    setAiMessage("最寄りのトイレを検索中...");
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -55,7 +62,7 @@ function App() {
         let minDistance = Infinity;
         let nearest = null;
 
-        // 最寄り駅を計算
+        // 全駅の中から一番近い駅を計算
         allStations.forEach((s) => {
           const d = Math.sqrt(
             Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
@@ -69,7 +76,7 @@ function App() {
         if (nearest) {
           setArrivalStation(nearest.name);
           try {
-            // バックエンド（Gemini）へ予測と励ましを依頼
+            // Gemini APIに予測とメッセージを依頼
             const res = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -80,25 +87,34 @@ function App() {
             });
             const data = await res.json();
             setAiMessage(data.message);
-            setTimeLeft(data.minutes * 60);
+            // 予測分をミリ秒に変換してセット (分 * 60秒 * 1000ミリ秒)
+            setTimeLeft(data.minutes * 60 * 1000);
           } catch (err) {
-            setAiMessage("大丈夫、ゆっくり向かいましょう。深呼吸して。");
-            setTimeLeft(300);
+            setAiMessage("大丈夫、お尻に力を入れて！ゆっくり向かおう。");
+            setTimeLeft(300 * 1000); // 失敗時はとりあえず5分
           }
         }
         setIsLoading(false);
       },
       () => {
-        alert("位置情報の取得に失敗しました");
+        alert("位置情報の取得に失敗しました。設定を確認してください。");
         setIsLoading(false);
       }
     );
   };
 
-  const formatTime = (s) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m}:${sec < 10 ? "0" : ""}${sec}`;
+  // --- 4. 時刻表示のフォーマット (分:秒:ミリ秒) ---
+  const formatTime = (ms) => {
+    if (ms === null) return "0:00:00";
+
+    const totalSeconds = Math.floor(ms / 1000);
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    const milliseconds = Math.floor((ms % 1000) / 10); // 上位2桁を表示
+
+    return `${m}:${s.toString().padStart(2, "0")}:${milliseconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -141,7 +157,7 @@ function App() {
           </div>
         )}
 
-        {/* カウントダウン表示 */}
+        {/* カウントダウン表示（開始されたら大きく表示） */}
         {timeLeft !== null && (
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>

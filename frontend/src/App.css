@@ -1,74 +1,79 @@
-/* 全体の背景と文字色 */
+/* 全体のレイアウト設定 */
 .App {
   text-align: center;
-  background-color: #282c34;
+  background-color: #1a1a1b; /* 目に優しい暗めの背景 */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: white;
-  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
 .App-header {
   width: 100%;
-  max-width: 500px;
+  max-width: 480px; /* スマホサイズに最適化 */
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  box-sizing: border-box;
 }
 
 .title {
-  font-size: 1.8rem;
-  margin-bottom: 30px;
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 25px;
   color: #61dafb;
+  letter-spacing: 1px;
 }
 
-/* 路線選択セクション */
+/* 1. 路線選択セクション */
 .line-selector {
   width: 100%;
-  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 15px;
 }
 
 .section-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #aaa;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
+  text-align: left;
+  padding-left: 5px;
 }
 
 .line-buttons {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
 }
 
 .line-btn {
-  padding: 12px 18px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
   border: none;
   color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  transition: transform 0.1s;
+  transition: opacity 0.2s, transform 0.1s;
 }
 
 .line-btn:active {
   transform: scale(0.95);
+  opacity: 0.8;
 }
 
 /* 区切り線 */
 .divider {
-  width: 90%;
+  width: 100%;
   height: 1px;
-  background-color: #444;
+  background-color: #333;
   margin: 30px 0;
 }
 
-/* 緊急ボタンセクション */
+/* 2. 緊急ボタンセクション */
 .emergency-section {
   width: 100%;
   display: flex;
@@ -77,100 +82,115 @@
 }
 
 .big-emergency-btn {
-  background: linear-gradient(145deg, #ff4b4b, #d43f3f);
+  background: linear-gradient(145deg, #ff4b4b, #e60000);
   color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
-  padding: 40px 20px;
-  border-radius: 25px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  padding: 35px 20px;
+  border-radius: 20px;
   border: none;
-  box-shadow: 0 10px 25px rgba(255, 75, 75, 0.4);
+  box-shadow: 0 8px 20px rgba(255, 60, 60, 0.4);
   cursor: pointer;
   width: 100%;
-  max-width: 350px;
+  max-width: 320px;
   transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .big-emergency-btn:disabled {
-  background: #666;
+  background: #444;
   box-shadow: none;
   cursor: not-allowed;
 }
 
 .big-emergency-btn:active:not(:disabled) {
   transform: translateY(4px);
-  box-shadow: 0 5px 10px rgba(255, 75, 75, 0.4);
+  box-shadow: 0 4px 10px rgba(255, 60, 60, 0.3);
 }
 
 .hint {
   font-size: 0.85rem;
   color: #ff9a9a;
   margin-top: 15px;
-  line-height: 1.4;
+  font-weight: 500;
 }
 
-/* カウントダウンカード */
+/* 3. カウントダウン表示カード */
 .countdown-card {
-  background: white;
-  color: #333;
-  padding: 25px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  width: 90%;
-  margin-top: -20px; /* 緊急ボタンがあった位置に被せるように表示 */
-  animation: slideUp 0.3s ease-out;
+  background: #ffffff;
+  color: #1a1a1b;
+  padding: 25px 20px;
+  border-radius: 24px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+  width: 95%;
+  margin-top: -10px;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes slideUp {
+@keyframes popIn {
   from {
-    transform: translateY(20px);
+    transform: scale(0.8);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: scale(1);
     opacity: 1;
   }
 }
 
 .target-station {
-  font-size: 1.2rem;
-  margin: 0 0 10px 0;
-  color: #555;
+  font-size: 1.1rem;
+  margin: 0 0 5px 0;
+  color: #666;
 }
 
+/* タイマー表示（ミリ秒対応） */
 .timer-display {
-  font-size: 4.5rem;
+  font-size: 4.2rem;
   font-weight: 900;
   color: #ff4b4b;
   margin: 10px 0;
-  font-variant-numeric: tabular-nums; /* 数字が動かないように固定 */
+
+  /* 数字がガタガタ動かないようにするための設定 */
+  font-family: "Courier New", Courier, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -2px;
 }
 
+/* AIメッセージの吹き出し */
 .ai-bubble {
   background: #f0f7ff;
-  border-left: 5px solid #007bff;
-  padding: 15px;
-  border-radius: 10px;
-  font-size: 1rem;
-  line-height: 1.5;
+  border-left: 6px solid #007bff;
+  padding: 18px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
   margin: 20px 0;
-  text-align: left;
+  text-align: center;
+  color: #0056b3;
 }
 
 .ai-icon {
-  margin-right: 8px;
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 5px;
 }
 
+/* 戻るボタン */
 .reset-btn {
-  background: #eee;
+  background: #f0f0f0;
   border: none;
-  padding: 12px 30px;
-  border-radius: 10px;
-  color: #666;
+  padding: 14px 40px;
+  border-radius: 12px;
+  color: #888;
   font-weight: bold;
+  font-size: 1rem;
   cursor: pointer;
+  width: 100%;
 }
 
 .reset-btn:hover {
-  background: #ddd;
+  background: #e5e5e5;
 }

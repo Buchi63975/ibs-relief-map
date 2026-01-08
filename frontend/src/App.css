@@ -55,3 +55,33 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
 }
+
+.map-wrapper {
+  margin: 20px 0;
+  border: 2px solid #eee;
+  border-radius: 17px;
+  overflow: hidden;
+  z-index: 1; /* 地図が他の要素の下に隠れないように */
+}
+
+.station-select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.route-button {
+  display: block;
+  width: 100%;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}

@@ -48,13 +48,19 @@ function App() {
   return (
     <div className="app-container">
       {/* タイトルを変更 */}
-      <h1>🏣 施設案内</h1>
+      <h1> 施設案内</h1>
 
       <div className="line-selector">
         {lines.map((l) => (
           <button
             key={l.id}
             onClick={() => setLine(l.id)}
+            // style を追加して、動的に色を変える
+            style={{
+              borderColor: l.color,
+              backgroundColor: line === l.id ? l.color : "#ffffff",
+              color: line === l.id ? "#ffffff" : "#333333",
+            }}
             className={line === l.id ? "active" : ""}
           >
             {l.name}

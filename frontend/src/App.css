@@ -8,31 +8,29 @@
 }
 
 /* ボタンが並ぶエリア */
-.line-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin: 30px 0;
+/* 路線ボタンの基本設定（色は JS 側で制御するので、共通設定のみ残す） */
+.line-selector button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 50px;
+  border: 2px solid; /* 色は style 属性で決まる */
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-/* 路線ボタンのデザイン */
-.line-selector button {
-  /* 大きさの設定 */
-  padding: 15px 25px;
-  font-size: 1.1rem;
-  font-weight: bold;
+/* 選択されているボタンの追加エフェクト */
+.line-selector button.active {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+}
 
-  /* 丸みの設定 */
-  border-radius: 50px;
-
-  /* 見た目の設定 */
-  border: 2px solid #e0e0e0;
-  background-color: #f8f9fa;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.2s ease; /* 変化を滑らかに */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 少し浮かせた感じ */
+/* 駅情報カードの見出しも、路線の色に合わせると綺麗です */
+.station-card h2 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  /* backendから来る line_color を使うために、ここも JS 側で制御してもいいですね */
 }
 
 /* 選択されているボタンのデザイン */

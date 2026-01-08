@@ -38,34 +38,48 @@ def gpt_prediction():
     dist_m = data.get("distance", 500)
     station_name = data.get("station_name", "最寄り駅")
 
-    # Geminiへの指示（プロンプト）
+    # --- ここからプロンプトを強化 ---
     prompt = f"""
-    あなたはIBS（過敏性腸症候群）ユーザーを支えるAIです。
-    ユーザーが現在地から{station_name}のトイレに向かっています。距離は約{dist_m}mです。
-    
-    1. 徒歩（分速80m程度）での到着時間を予測してください。
-    2. ユーザーの不安を和らげる短い励まし（15文字以内）をください。
-    
+    あなたはIBS（過敏性腸症候群）で今まさに限界を迎えているユーザーを救う、熱血かつ包容力のあるAIガイドです。
+    ユーザーは{station_name}のトイレまで約{dist_m}mの地点で戦っています。
+
+    1. 到着時間を予測してください（分速80mで計算）。
+    2. ユーザーに送る「魂のメッセージ」を1つ生成してください。
+
+    【メッセージの条件】
+    - 毎回異なる内容（最低20パターン以上のバリエーション）にすること。
+    - ニュアンス：「最悪漏らしても大丈夫。死ぬわけじゃない」「お尻に力を入れて！」「括約筋を信じて！」「一歩ずつ、でも確実に進もう」「今が踏ん張り時だ！」「深呼吸して、お尻の穴を締めて！」といった、切実で具体的な励まし。
+    - 不安を和らげる「優しさ」と、限界を突破させる「根性」を混ぜること。
+    - 20文字以内。
+
     回答は必ず以下のJSON形式のみで返してください。
-    {{"minutes": 予測分(数値), "message": "励ましの言葉"}}
+    {{"minutes": 予測分(数値), "message": "メッセージ内容"}}
     """
+    # --- ここまで ---
 
     try:
-        # Geminiで生成
         response = model.generate_content(
             prompt,
             generation_config=genai.types.GenerationConfig(
                 response_mime_type="application/json"
             ),
         )
-        # Geminiの返答をそのまま返す
         return response.text
     except Exception as e:
-        print(f"Gemini Error: {e}")
-        # エラー時のバックアップ（計算で算出）
-        fallback_min = max(1, round(dist_m / 80))
+        # エラー時の予備メッセージも強化
+        fallback_messages = [
+            "お尻を締めて！あと少し！",
+            "最悪、漏らしても大丈夫。私がついてる。",
+            "一歩ずつ、括約筋に集中して！",
+            "深呼吸。大丈夫、間に合う。",
+        ]
+        import random
+
         return jsonify(
-            {"minutes": fallback_min, "message": "大丈夫、一歩ずつ進みましょう。"}
+            {
+                "minutes": max(1, round(dist_m / 80)),
+                "message": random.choice(fallback_messages),
+            }
         )
 
 

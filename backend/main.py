@@ -4,95 +4,104 @@ import google.generativeai as genai
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
-# stations.py（駅データ）から必要な関数をインポート
+# 既存の駅データ管理用ファイルをインポート
 from stations import ALL_LINES, get_stations_by_line, get_station_by_id
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
 
 # --- Gemini APIの設定 ---
-# RenderのEnvironment Variablesに「GEMINI_API_KEY」を設定してください
+# Renderの環境変数にGEMINI_API_KEYを設定してください
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 @app.route("/")
 def serve():
-    """Reactのビルド済みファイルを返します"""
+    """Reactのフロントエンドを提供します"""
     return send_from_directory(app.static_folder, "index.html")
 
 
 @app.route("/api/lines")
 def lines():
-    """路線一覧を返します"""
+    """路線一覧を取得します"""
     return jsonify(ALL_LINES)
 
 
 @app.route("/api/stations")
 def stations():
-    """特定の路線の駅一覧を返します"""
+    """指定された路線の駅リストを取得します"""
     line_id = request.args.get("line_id")
     return jsonify(get_stations_by_line(line_id))
 
 
+# --- AIルート＆トイレ位置予測API ---
 @app.route("/api/gpt-prediction", methods=["POST"])
 def gpt_prediction():
-    """AIによる到着予測・乗換案内・励ましを生成します"""
+    """
+    現在地、目的地から「所要時間」「移動手順」「構内トイレ位置」をAIに予測させます
+    """
     data = request.json
-    dist_m = data.get("distance", 500)
+    lat = data.get("lat")
+    lng = data.get("lng")
     station_name = data.get("station_name", "目的地")
-    is_manual = data.get("is_manual", False)  # 手動選択かどうかの判定
+    is_manual = data.get("is_manual", False)
 
-    # AIへの指示（プロンプト）の構築
-    # 手動選択時は「乗換案内」を、緊急時は「最短ルート」を重視するように指示を変えています
+    # プロンプトの構築：トイレの場所を「具体的」に答えるよう強く指示
     prompt = f"""
-    あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、熱血で非常に頼りになるナビゲーターです。
-    ユーザーが現在地から【{station_name}】を目指しています。直線距離は約{dist_m}mです。
+    あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
+    現在地（緯度:{lat}, 経度:{lng}）から【{station_name}】への移動と、駅構内のトイレ情報を教えてください。
 
-    【今回のミッション】
-    1. 徒歩（分速80m）や電車利用を考慮した到着予想時間を数字で出してください。
-    2. ユーザーに「具体的なルート・乗換のアドバイス」と「魂の励まし」を伝えてください。
+    【要求事項】
+    1. 公共交通機関と徒歩を組み合わせた到着予測時間（分）
+    2. 到着までの具体的な移動ステップ（3〜4つ）
+    3. 駅構内のトイレの具体的な場所（例：北口改札内、〇〇線ホーム中央の階段下など）
+       ※AIの知識から可能な限り具体的に予測してください。
+    4. 魂の励ましメッセージ（15文字以内）
 
-    【指示詳細】
-    - {f"ユーザーはこの駅を自ら選択しました。現在地からの乗換方法や最短の歩き方を具体的にアドバイスしてください。" if is_manual else "緊急事態です！一番近いこの駅まで、脇目も振らず最短で駆け込むルートを即答してください。"}
-    - 励ましには「お尻を締めて！」「括約筋を信じて！」「最悪漏らしても大丈夫、死ぬわけじゃない」「今が踏ん張り時だ！」といった、綺麗事ではない切実な言葉を含めてください。
-    - メッセージは30文字以内で、パニック時でも読みやすく短文で。
+    【指示】
+    - {f"ユーザーはこの駅を自ら選択しました。最適な乗換ルートを提案してください。" if is_manual else "緊急事態です！現在地から一番近いこの駅まで最短で駆け込むルートを教えてください。"}
+    - 励ましは「お尻を締めろ！」「括約筋を信じて！」「最悪漏らしても大丈夫だ」という切実なトーンで。
 
-    【回答形式】
-    必ず以下のJSON形式のみで返してください。
-    {{"minutes": 予測分(数値), "message": "アドバイスと励ましの言葉"}}
+    【回答形式】必ず以下のJSON形式のみで返してください。余計な解説は不要です。
+    {{
+      "minutes": 予測合計分(数値), 
+      "steps": ["ステップ1", "ステップ2", "ステップ3"],
+      "toilet_info": "駅構内トイレの具体的な場所の解説（例：中央改札を入ってすぐ右手の多機能トイレが空いています）",
+      "message": "励ましの言葉"
+    }}
     """
 
     try:
-        # Geminiで回答を生成
+        # Geminiで回答生成
         response = model.generate_content(
             prompt,
             generation_config=genai.types.GenerationConfig(
                 response_mime_type="application/json"
             ),
         )
-        # GeminiのJSON出力をそのまま返却
+
+        # AIの回答をそのまま返却
         return response.text
 
     except Exception as e:
-        print(f"Gemini Error: {e}")
-
-        # --- APIエラー時のバックアップ用メッセージ ---
-        fallback_messages = [
-            f"{station_name}まであと少し！お尻を締めて耐えるんだ！",
-            "大丈夫、漏らしても私がついてる。一歩ずつ進もう。",
-            "深呼吸して、括約筋に全神経を集中させて！",
-            "今が人生の正念場だ！お尻に力を入れて突き進め！",
-            "駅のトイレはすぐそこだ。自分を信じて！",
-        ]
-
-        fallback_min = max(1, round(dist_m / 80))
+        print(f"Gemini API Error: {e}")
+        # APIエラー時のバックアップデータ
         return jsonify(
-            {"minutes": fallback_min, "message": random.choice(fallback_messages)}
+            {
+                "minutes": 12,
+                "steps": [
+                    f"{station_name}へ向かって移動開始",
+                    "公共交通機関を最短で利用",
+                    "駅到着後、即座に改札内トイレへ",
+                ],
+                "toilet_info": "駅構内図を確認し、一番近い改札内のトイレを目指してください！",
+                "message": "諦めるな！お尻を締めろ！",
+            }
         )
 
 
 if __name__ == "__main__":
-    # Render等の環境に合わせてポートを自動設定
+    # ポート番号はRenderの仕様に合わせて自動取得
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

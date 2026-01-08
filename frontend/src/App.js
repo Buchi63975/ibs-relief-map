@@ -136,4 +136,91 @@ function App() {
   );
 }
 
+import React, { useState, useEffect } from "react";
+import "./App.css";
+
+function App() {
+  const [lines, setLines] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [selectedStation, setSelectedStation] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [aiMessage, setAiMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/lines")
+      .then((res) => res.json())
+      .then(setLines);
+  }, []);
+
+  // --- メインロジック: 現在地からトイレを探してカウントダウン ---
+  const findNearestAndStartGuidance = () => {
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude, longitude } = pos.coords;
+
+      // 1. 全駅データ（stations.pyにあるもの）を取得（今回は簡略化のためAPIで全取得を想定）
+      // 一番近い駅を探す（三平方の定理による簡易計算）
+      // ※stationsデータがフロントにあればここでループ計算
+
+      // 今回はデモとして「一番近い駅を見つけた」と仮定して、その距離を計算
+      // 本来は全駅ループして最小距離のものを特定します
+      const dist = 400; // 仮の距離（メートル）
+      const nearestStationName = "新宿駅";
+
+      // 2. GPT APIに予測と励ましを依頼
+      const res = await fetch("/api/gpt-prediction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          distance: dist,
+          station_name: nearestStationName,
+        }),
+      });
+      const data = await res.json();
+
+      // 3. 状態を更新してカウントダウン開始
+      setAiMessage(data.message);
+      setTimeLeft(data.minutes * 60);
+      setIsLoading(false);
+    });
+  };
+
+  // カウントダウンタイマー
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const formatTime = (s) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <h1>IBS Relief Map AI</h1>
+
+        <button
+          className="emergency-btn"
+          onClick={findNearestAndStartGuidance}
+          disabled={isLoading}
+        >
+          {isLoading ? "AIが計算中..." : "今すぐ一番近いトイレを探す 📍"}
+        </button>
+
+        {timeLeft !== null && (
+          <div className="countdown-card">
+            <div className="ai-bubble">{aiMessage}</div>
+            <div className="timer-display">{formatTime(timeLeft)}</div>
+            <p>トイレ到着までの目安</p>
+          </div>
+        )}
+
+        {/* 既存の路線選択など */}
+      </header>
+    </div>
+  );
+}
+
 export default App;

@@ -1,43 +1,59 @@
-/* frontend/src/App.css */
+/* 全体の背景など */
 .app-container {
-  background-color: #f1f8e9; /* 非常に淡い緑 */
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
   font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
-.countdown-card {
-  background-color: white;
-  padding: 3rem;
-  border-radius: 40px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.05);
-  border: 4px solid #81c784; /* 安心感のある緑の境界線 */
-  text-align: center;
-  max-width: 400px;
-  width: 90%;
+/* ボタンが並ぶエリア */
+.line-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin: 30px 0;
 }
 
-.station-name {
-  color: #2e7d32;
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.timer {
-  font-size: 5rem;
-  font-weight: 800;
-  color: #1b5e20; /* 濃い緑 */
-  margin: 1rem 0;
-}
-
-.toilet-info {
-  background-color: #c8e6c9;
-  padding: 10px 20px;
-  border-radius: 20px;
-  display: inline-block;
-  color: #2e7d32;
+/* 路線ボタンのデザイン */
+.line-selector button {
+  /* 大きさの設定 */
+  padding: 15px 25px;
+  font-size: 1.1rem;
   font-weight: bold;
+
+  /* 丸みの設定 */
+  border-radius: 50px;
+
+  /* 見た目の設定 */
+  border: 2px solid #e0e0e0;
+  background-color: #f8f9fa;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease; /* 変化を滑らかに */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 少し浮かせた感じ */
+}
+
+/* 選択されているボタンのデザイン */
+.line-selector button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+  transform: translateY(-2px); /* 選択時に少し浮き上がる */
+}
+
+/* ボタンを押した瞬間の動き */
+.line-selector button:active {
+  transform: translateY(0);
+}
+
+/* 駅情報カードのデザイン */
+.station-card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }

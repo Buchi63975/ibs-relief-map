@@ -47,9 +47,9 @@ function App() {
   // --- 3. 画面の見た目 (JSX) ---
   return (
     <div className="app-container">
-      <h1>🚾 間に合え！トイレマップ</h1>
+      {/* タイトルを変更 */}
+      <h1>🏣 施設案内</h1>
 
-      {/* 路線選択ボタン */}
       <div className="line-selector">
         {lines.map((l) => (
           <button

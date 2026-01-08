@@ -1,5 +1,5 @@
-# 路線データ
-LINES = [
+# 路線データ（名前を ALL_LINES に修正）
+ALL_LINES = [
     {"id": "yamanote", "name": "山手線", "color": "#008000"},
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},
     {"id": "saikyo", "name": "埼京線", "color": "#00ac9a"},
@@ -219,7 +219,7 @@ STATIONS = [
         "lat": 35.6750,
         "lng": 139.7633,
     },
-    # --- 中央線快速 (主要24駅) ---
+    # --- 中央線快速 ---
     {"id": "c01", "name": "東京駅", "line_id": "chuo", "lat": 35.6812, "lng": 139.7671},
     {"id": "c02", "name": "神田駅", "line_id": "chuo", "lat": 35.6916, "lng": 139.7708},
     {
@@ -322,7 +322,7 @@ STATIONS = [
         "lng": 139.3126,
     },
     {"id": "c24", "name": "高尾駅", "line_id": "chuo", "lat": 35.6420, "lng": 139.2822},
-    # --- 埼京線 (全19駅) ---
+    # --- 埼京線 ---
     {
         "id": "s01",
         "name": "大崎駅",
@@ -456,7 +456,7 @@ STATIONS = [
         "lat": 35.9063,
         "lng": 139.6240,
     },
-    # --- 湘南新宿ライン (主要駅セグメント) ---
+    # --- 湘南新宿ライン ---
     {
         "id": "ss01",
         "name": "大宮駅",
@@ -545,11 +545,11 @@ STATIONS = [
 
 
 def get_lines():
-    return LINES
+    return ALL_LINES
 
 
 def get_stations_by_line(line_id):
-    line_color = next((l["color"] for l in LINES if l["id"] == line_id), "#333333")
+    line_color = next((l["color"] for l in ALL_LINES if l["id"] == line_id), "#333333")
     return [
         {**s, "line_color": line_color} for s in STATIONS if s["line_id"] == line_id
     ]
@@ -559,7 +559,7 @@ def get_station_by_id(station_id):
     station = next((s for s in STATIONS if s["id"] == station_id), None)
     if station:
         line_color = next(
-            (l["color"] for l in LINES if l["id"] == station["line_id"]), "#333333"
+            (l["color"] for l in ALL_LINES if l["id"] == station["line_id"]), "#333333"
         )
         return {**station, "line_color": line_color}
     return None

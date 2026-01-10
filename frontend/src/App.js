@@ -163,16 +163,19 @@ function App() {
               <p className="section-label">路線を選択してトイレを検索</p>
               <div className="line-buttons">
                 {lines.map((line) => {
-                  // IDをクリーンアップ
-                  const cleanId = line.id.trim();
+                  // サーバーから届いたIDを、ここでもう一度徹底的に掃除する
+                  const rawId = String(line.id);
+                  const cleanId = rawId.trim().toLowerCase();
+
                   return (
                     <button
                       key={line.id}
                       className="line-btn"
                       style={{
+                        // LINE_CONFIGのキーと確実に一致させる
                         backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
                       }}
-                      // onClickに渡す値もトリムする
+                      // クリック時に送るIDも、この掃除済みのcleanIdを使う
                       onClick={() => handleLineClick(cleanId)}
                     >
                       {line.name}

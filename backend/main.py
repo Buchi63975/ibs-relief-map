@@ -21,7 +21,7 @@ try:
             print(f"Model Name: {m.name}")
 except Exception as e:
     print(f"Could not list models: {e}")
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("models/gemini-2.0-flash")
 
 
 @app.route("/")

@@ -1,4 +1,4 @@
-# 路線データ (main.pyのインポート名と一致させています)
+# 路線データ
 ALL_LINES = [
     {"id": "yamanote", "name": "山手線", "color": "#008000"},
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},
@@ -12,6 +12,7 @@ STATIONS = [
     {
         "id": "y01",
         "name": "東京駅",
+        "name_en": "Tokyo",
         "line_id": "yamanote",
         "lat": 35.6812,
         "lng": 139.7671,
@@ -19,6 +20,7 @@ STATIONS = [
     {
         "id": "y02",
         "name": "神田駅",
+        "name_en": "Kanda",
         "line_id": "yamanote",
         "lat": 35.6916,
         "lng": 139.7708,
@@ -26,6 +28,7 @@ STATIONS = [
     {
         "id": "y03",
         "name": "秋葉原駅",
+        "name_en": "Akihabara",
         "line_id": "yamanote",
         "lat": 35.6983,
         "lng": 139.7730,
@@ -33,6 +36,7 @@ STATIONS = [
     {
         "id": "y04",
         "name": "御徒町駅",
+        "name_en": "Okachimachi",
         "line_id": "yamanote",
         "lat": 35.7074,
         "lng": 139.7747,
@@ -40,6 +44,7 @@ STATIONS = [
     {
         "id": "y05",
         "name": "上野駅",
+        "name_en": "Ueno",
         "line_id": "yamanote",
         "lat": 35.7137,
         "lng": 139.7772,
@@ -47,6 +52,7 @@ STATIONS = [
     {
         "id": "y06",
         "name": "鶯谷駅",
+        "name_en": "Uguisudani",
         "line_id": "yamanote",
         "lat": 35.7204,
         "lng": 139.7788,
@@ -54,6 +60,7 @@ STATIONS = [
     {
         "id": "y07",
         "name": "日暮里駅",
+        "name_en": "Nippori",
         "line_id": "yamanote",
         "lat": 35.7277,
         "lng": 139.7709,
@@ -61,6 +68,7 @@ STATIONS = [
     {
         "id": "y08",
         "name": "西日暮里駅",
+        "name_en": "NishiNippori",
         "line_id": "yamanote",
         "lat": 35.7321,
         "lng": 139.7667,
@@ -68,6 +76,7 @@ STATIONS = [
     {
         "id": "y09",
         "name": "田端駅",
+        "name_en": "Tabata",
         "line_id": "yamanote",
         "lat": 35.7380,
         "lng": 139.7608,
@@ -75,6 +84,7 @@ STATIONS = [
     {
         "id": "y10",
         "name": "駒込駅",
+        "name_en": "Komagome",
         "line_id": "yamanote",
         "lat": 35.7364,
         "lng": 139.7468,
@@ -82,6 +92,7 @@ STATIONS = [
     {
         "id": "y11",
         "name": "巣鴨駅",
+        "name_en": "Sugamo",
         "line_id": "yamanote",
         "lat": 35.7334,
         "lng": 139.7393,
@@ -89,6 +100,7 @@ STATIONS = [
     {
         "id": "y12",
         "name": "大塚駅",
+        "name_en": "Otsuka",
         "line_id": "yamanote",
         "lat": 35.7314,
         "lng": 139.7286,
@@ -96,6 +108,7 @@ STATIONS = [
     {
         "id": "y13",
         "name": "池袋駅",
+        "name_en": "Ikebukuro",
         "line_id": "yamanote",
         "lat": 35.7289,
         "lng": 139.7103,
@@ -103,6 +116,7 @@ STATIONS = [
     {
         "id": "y14",
         "name": "目白駅",
+        "name_en": "Mejiro",
         "line_id": "yamanote",
         "lat": 35.7212,
         "lng": 139.7062,
@@ -110,6 +124,7 @@ STATIONS = [
     {
         "id": "y15",
         "name": "高田馬場駅",
+        "name_en": "Takadanobaba",
         "line_id": "yamanote",
         "lat": 35.7122,
         "lng": 139.7037,
@@ -117,6 +132,7 @@ STATIONS = [
     {
         "id": "y16",
         "name": "新大久保駅",
+        "name_en": "ShinOkubo",
         "line_id": "yamanote",
         "lat": 35.7013,
         "lng": 139.7002,
@@ -124,6 +140,7 @@ STATIONS = [
     {
         "id": "y17",
         "name": "新宿駅",
+        "name_en": "Shinjuku",
         "line_id": "yamanote",
         "lat": 35.6896,
         "lng": 139.7005,
@@ -131,6 +148,7 @@ STATIONS = [
     {
         "id": "y18",
         "name": "代々木駅",
+        "name_en": "Yoyogi",
         "line_id": "yamanote",
         "lat": 35.6830,
         "lng": 139.7020,
@@ -138,6 +156,7 @@ STATIONS = [
     {
         "id": "y19",
         "name": "原宿駅",
+        "name_en": "Harajuku",
         "line_id": "yamanote",
         "lat": 35.6701,
         "lng": 139.7026,
@@ -145,6 +164,7 @@ STATIONS = [
     {
         "id": "y20",
         "name": "渋谷駅",
+        "name_en": "Shibuya",
         "line_id": "yamanote",
         "lat": 35.6580,
         "lng": 139.7016,
@@ -152,6 +172,7 @@ STATIONS = [
     {
         "id": "y21",
         "name": "恵比寿駅",
+        "name_en": "Ebisu",
         "line_id": "yamanote",
         "lat": 35.6466,
         "lng": 139.7101,
@@ -159,6 +180,7 @@ STATIONS = [
     {
         "id": "y22",
         "name": "目黒駅",
+        "name_en": "Meguro",
         "line_id": "yamanote",
         "lat": 35.6339,
         "lng": 139.7157,
@@ -166,6 +188,7 @@ STATIONS = [
     {
         "id": "y23",
         "name": "五反田駅",
+        "name_en": "Gotanda",
         "line_id": "yamanote",
         "lat": 35.6264,
         "lng": 139.7234,
@@ -173,6 +196,7 @@ STATIONS = [
     {
         "id": "y24",
         "name": "大崎駅",
+        "name_en": "Osaki",
         "line_id": "yamanote",
         "lat": 35.6197,
         "lng": 139.7285,
@@ -180,6 +204,7 @@ STATIONS = [
     {
         "id": "y25",
         "name": "品川駅",
+        "name_en": "Shinagawa",
         "line_id": "yamanote",
         "lat": 35.6284,
         "lng": 139.7387,
@@ -187,6 +212,7 @@ STATIONS = [
     {
         "id": "y26",
         "name": "高輪ゲートウェイ駅",
+        "name_en": "TakanawaGateway",
         "line_id": "yamanote",
         "lat": 35.6355,
         "lng": 139.7407,
@@ -194,6 +220,7 @@ STATIONS = [
     {
         "id": "y27",
         "name": "田町駅",
+        "name_en": "Tamachi",
         "line_id": "yamanote",
         "lat": 35.6457,
         "lng": 139.7475,
@@ -201,6 +228,7 @@ STATIONS = [
     {
         "id": "y28",
         "name": "浜松町駅",
+        "name_en": "Hamamatsucho",
         "line_id": "yamanote",
         "lat": 35.6556,
         "lng": 139.7567,
@@ -208,6 +236,7 @@ STATIONS = [
     {
         "id": "y29",
         "name": "新橋駅",
+        "name_en": "Shimbashi",
         "line_id": "yamanote",
         "lat": 35.6663,
         "lng": 139.7583,
@@ -215,16 +244,32 @@ STATIONS = [
     {
         "id": "y30",
         "name": "有楽町駅",
+        "name_en": "Yurakucho",
         "line_id": "yamanote",
         "lat": 35.6750,
         "lng": 139.7633,
     },
     # --- 中央線快速 (24駅) ---
-    {"id": "c01", "name": "東京駅", "line_id": "chuo", "lat": 35.6812, "lng": 139.7671},
-    {"id": "c02", "name": "神田駅", "line_id": "chuo", "lat": 35.6916, "lng": 139.7708},
+    {
+        "id": "c01",
+        "name": "東京駅",
+        "name_en": "Tokyo",
+        "line_id": "chuo",
+        "lat": 35.6812,
+        "lng": 139.7671,
+    },
+    {
+        "id": "c02",
+        "name": "神田駅",
+        "name_en": "Kanda",
+        "line_id": "chuo",
+        "lat": 35.6916,
+        "lng": 139.7708,
+    },
     {
         "id": "c03",
         "name": "御茶ノ水駅",
+        "name_en": "Ochanomizu",
         "line_id": "chuo",
         "lat": 35.6997,
         "lng": 139.7652,
@@ -232,15 +277,31 @@ STATIONS = [
     {
         "id": "c04",
         "name": "四ツ谷駅",
+        "name_en": "Yotsuya",
         "line_id": "chuo",
         "lat": 35.6860,
         "lng": 139.7306,
     },
-    {"id": "c05", "name": "新宿駅", "line_id": "chuo", "lat": 35.6896, "lng": 139.7005},
-    {"id": "c06", "name": "中野駅", "line_id": "chuo", "lat": 35.7057, "lng": 139.6658},
+    {
+        "id": "c05",
+        "name": "新宿駅",
+        "name_en": "Shinjuku",
+        "line_id": "chuo",
+        "lat": 35.6896,
+        "lng": 139.7005,
+    },
+    {
+        "id": "c06",
+        "name": "中野駅",
+        "name_en": "Nakano",
+        "line_id": "chuo",
+        "lat": 35.7057,
+        "lng": 139.6658,
+    },
     {
         "id": "c07",
         "name": "高円寺駅",
+        "name_en": "Koenji",
         "line_id": "chuo",
         "lat": 35.7053,
         "lng": 139.6496,
@@ -248,14 +309,23 @@ STATIONS = [
     {
         "id": "c08",
         "name": "阿佐ケ谷駅",
+        "name_en": "Asagaya",
         "line_id": "chuo",
         "lat": 35.7048,
         "lng": 139.6358,
     },
-    {"id": "c09", "name": "荻窪駅", "line_id": "chuo", "lat": 35.7043, "lng": 139.6197},
+    {
+        "id": "c09",
+        "name": "荻窪駅",
+        "name_en": "Ogikubo",
+        "line_id": "chuo",
+        "lat": 35.7043,
+        "lng": 139.6197,
+    },
     {
         "id": "c10",
         "name": "西荻窪駅",
+        "name_en": "NishiOgikubo",
         "line_id": "chuo",
         "lat": 35.7038,
         "lng": 139.5995,
@@ -263,14 +333,23 @@ STATIONS = [
     {
         "id": "c11",
         "name": "吉祥寺駅",
+        "name_en": "Kichijoji",
         "line_id": "chuo",
         "lat": 35.7031,
         "lng": 139.5798,
     },
-    {"id": "c12", "name": "三鷹駅", "line_id": "chuo", "lat": 35.7023, "lng": 139.5605},
+    {
+        "id": "c12",
+        "name": "三鷹駅",
+        "name_en": "Mitaka",
+        "line_id": "chuo",
+        "lat": 35.7023,
+        "lng": 139.5605,
+    },
     {
         "id": "c13",
         "name": "武蔵境駅",
+        "name_en": "MusashiSakai",
         "line_id": "chuo",
         "lat": 35.7020,
         "lng": 139.5446,
@@ -278,6 +357,7 @@ STATIONS = [
     {
         "id": "c14",
         "name": "東小金井駅",
+        "name_en": "HigashiKoganei",
         "line_id": "chuo",
         "lat": 35.7016,
         "lng": 139.5241,
@@ -285,6 +365,7 @@ STATIONS = [
     {
         "id": "c15",
         "name": "武蔵小金井駅",
+        "name_en": "MusashiKoganei",
         "line_id": "chuo",
         "lat": 35.7010,
         "lng": 139.5064,
@@ -292,6 +373,7 @@ STATIONS = [
     {
         "id": "c16",
         "name": "国分寺駅",
+        "name_en": "Kokubunji",
         "line_id": "chuo",
         "lat": 35.7000,
         "lng": 139.4802,
@@ -299,17 +381,47 @@ STATIONS = [
     {
         "id": "c17",
         "name": "西国分寺駅",
+        "name_en": "NishiKokubunji",
         "line_id": "chuo",
         "lat": 35.6997,
         "lng": 139.4659,
     },
-    {"id": "c18", "name": "国立駅", "line_id": "chuo", "lat": 35.6992, "lng": 139.4461},
-    {"id": "c19", "name": "立川駅", "line_id": "chuo", "lat": 35.6983, "lng": 139.4137},
-    {"id": "c20", "name": "日野駅", "line_id": "chuo", "lat": 35.6790, "lng": 139.3938},
-    {"id": "c21", "name": "豊田駅", "line_id": "chuo", "lat": 35.6593, "lng": 139.3814},
+    {
+        "id": "c18",
+        "name": "国立駅",
+        "name_en": "Kunitachi",
+        "line_id": "chuo",
+        "lat": 35.6992,
+        "lng": 139.4461,
+    },
+    {
+        "id": "c19",
+        "name": "立川駅",
+        "name_en": "Tachikawa",
+        "line_id": "chuo",
+        "lat": 35.6983,
+        "lng": 139.4137,
+    },
+    {
+        "id": "c20",
+        "name": "日野駅",
+        "name_en": "Hino",
+        "line_id": "chuo",
+        "lat": 35.6790,
+        "lng": 139.3938,
+    },
+    {
+        "id": "c21",
+        "name": "豊田駅",
+        "name_en": "Toyoda",
+        "line_id": "chuo",
+        "lat": 35.6593,
+        "lng": 139.3814,
+    },
     {
         "id": "c22",
         "name": "八王子駅",
+        "name_en": "Hachioji",
         "line_id": "chuo",
         "lat": 35.6555,
         "lng": 139.3389,
@@ -317,15 +429,24 @@ STATIONS = [
     {
         "id": "c23",
         "name": "西八王子駅",
+        "name_en": "NishiHachioji",
         "line_id": "chuo",
         "lat": 35.6566,
         "lng": 139.3126,
     },
-    {"id": "c24", "name": "高尾駅", "line_id": "chuo", "lat": 35.6420, "lng": 139.2822},
+    {
+        "id": "c24",
+        "name": "高尾駅",
+        "name_en": "Takao",
+        "line_id": "chuo",
+        "lat": 35.6420,
+        "lng": 139.2822,
+    },
     # --- 埼京線 (19駅) ---
     {
         "id": "s01",
         "name": "大崎駅",
+        "name_en": "Osaki",
         "line_id": "saikyo",
         "lat": 35.6197,
         "lng": 139.7285,
@@ -333,6 +454,7 @@ STATIONS = [
     {
         "id": "s02",
         "name": "恵比寿駅",
+        "name_en": "Ebisu",
         "line_id": "saikyo",
         "lat": 35.6466,
         "lng": 139.7101,
@@ -340,6 +462,7 @@ STATIONS = [
     {
         "id": "s03",
         "name": "渋谷駅",
+        "name_en": "Shibuya",
         "line_id": "saikyo",
         "lat": 35.6580,
         "lng": 139.7016,
@@ -347,6 +470,7 @@ STATIONS = [
     {
         "id": "s04",
         "name": "新宿駅",
+        "name_en": "Shinjuku",
         "line_id": "saikyo",
         "lat": 35.6896,
         "lng": 139.7005,
@@ -354,6 +478,7 @@ STATIONS = [
     {
         "id": "s05",
         "name": "池袋駅",
+        "name_en": "Ikebukuro",
         "line_id": "saikyo",
         "lat": 35.7289,
         "lng": 139.7103,
@@ -361,6 +486,7 @@ STATIONS = [
     {
         "id": "s06",
         "name": "板橋駅",
+        "name_en": "Itabashi",
         "line_id": "saikyo",
         "lat": 35.7469,
         "lng": 139.7196,
@@ -368,6 +494,7 @@ STATIONS = [
     {
         "id": "s07",
         "name": "十条駅",
+        "name_en": "Jujo",
         "line_id": "saikyo",
         "lat": 35.7607,
         "lng": 139.7222,
@@ -375,6 +502,7 @@ STATIONS = [
     {
         "id": "s08",
         "name": "赤羽駅",
+        "name_en": "Akabane",
         "line_id": "saikyo",
         "lat": 35.7777,
         "lng": 139.7208,
@@ -382,6 +510,7 @@ STATIONS = [
     {
         "id": "s09",
         "name": "北赤羽駅",
+        "name_en": "KitaAkabane",
         "line_id": "saikyo",
         "lat": 35.7876,
         "lng": 139.7061,
@@ -389,6 +518,7 @@ STATIONS = [
     {
         "id": "s10",
         "name": "浮間舟渡駅",
+        "name_en": "UkimaFunado",
         "line_id": "saikyo",
         "lat": 35.7913,
         "lng": 139.6912,
@@ -396,6 +526,7 @@ STATIONS = [
     {
         "id": "s11",
         "name": "戸田公園駅",
+        "name_en": "TodaKoen",
         "line_id": "saikyo",
         "lat": 35.8078,
         "lng": 139.6780,
@@ -403,6 +534,7 @@ STATIONS = [
     {
         "id": "s12",
         "name": "戸田駅",
+        "name_en": "Toda",
         "line_id": "saikyo",
         "lat": 35.8176,
         "lng": 139.6698,
@@ -410,6 +542,7 @@ STATIONS = [
     {
         "id": "s13",
         "name": "北戸田駅",
+        "name_en": "KitaToda",
         "line_id": "saikyo",
         "lat": 35.8315,
         "lng": 139.6606,
@@ -417,6 +550,7 @@ STATIONS = [
     {
         "id": "s14",
         "name": "武蔵浦和駅",
+        "name_en": "MusashiUrawa",
         "line_id": "saikyo",
         "lat": 35.8455,
         "lng": 139.6469,
@@ -424,6 +558,7 @@ STATIONS = [
     {
         "id": "s15",
         "name": "中浦和駅",
+        "name_en": "NakaUrawa",
         "line_id": "saikyo",
         "lat": 35.8538,
         "lng": 139.6375,
@@ -431,6 +566,7 @@ STATIONS = [
     {
         "id": "s16",
         "name": "南与野駅",
+        "name_en": "MinamiYono",
         "line_id": "saikyo",
         "lat": 35.8677,
         "lng": 139.6310,
@@ -438,6 +574,7 @@ STATIONS = [
     {
         "id": "s17",
         "name": "与野本町駅",
+        "name_en": "Yonohonmachi",
         "line_id": "saikyo",
         "lat": 35.8812,
         "lng": 139.6267,
@@ -445,6 +582,7 @@ STATIONS = [
     {
         "id": "s18",
         "name": "北与野駅",
+        "name_en": "KitaYono",
         "line_id": "saikyo",
         "lat": 35.8893,
         "lng": 139.6310,
@@ -452,14 +590,16 @@ STATIONS = [
     {
         "id": "s19",
         "name": "大宮駅",
+        "name_en": "Omiya",
         "line_id": "saikyo",
         "lat": 35.9063,
         "lng": 139.6240,
     },
-    # --- 湘南新宿ライン (主要駅12駅) ---
+    # --- 湘南新宿ライン (12駅) ---
     {
         "id": "ss01",
         "name": "大宮駅",
+        "name_en": "Omiya",
         "line_id": "shonan",
         "lat": 35.9063,
         "lng": 139.6240,
@@ -467,6 +607,7 @@ STATIONS = [
     {
         "id": "ss02",
         "name": "浦和駅",
+        "name_en": "Urawa",
         "line_id": "shonan",
         "lat": 35.8590,
         "lng": 139.6571,
@@ -474,6 +615,7 @@ STATIONS = [
     {
         "id": "ss03",
         "name": "赤羽駅",
+        "name_en": "Akabane",
         "line_id": "shonan",
         "lat": 35.7777,
         "lng": 139.7208,
@@ -481,6 +623,7 @@ STATIONS = [
     {
         "id": "ss04",
         "name": "池袋駅",
+        "name_en": "Ikebukuro",
         "line_id": "shonan",
         "lat": 35.7289,
         "lng": 139.7103,
@@ -488,6 +631,7 @@ STATIONS = [
     {
         "id": "ss05",
         "name": "新宿駅",
+        "name_en": "Shinjuku",
         "line_id": "shonan",
         "lat": 35.6896,
         "lng": 139.7005,
@@ -495,6 +639,7 @@ STATIONS = [
     {
         "id": "ss06",
         "name": "渋谷駅",
+        "name_en": "Shibuya",
         "line_id": "shonan",
         "lat": 35.6580,
         "lng": 139.7016,
@@ -502,6 +647,7 @@ STATIONS = [
     {
         "id": "ss07",
         "name": "恵比寿駅",
+        "name_en": "Ebisu",
         "line_id": "shonan",
         "lat": 35.6466,
         "lng": 139.7101,
@@ -509,6 +655,7 @@ STATIONS = [
     {
         "id": "ss08",
         "name": "大崎駅",
+        "name_en": "Osaki",
         "line_id": "shonan",
         "lat": 35.6197,
         "lng": 139.7285,
@@ -516,6 +663,7 @@ STATIONS = [
     {
         "id": "ss09",
         "name": "武蔵小杉駅",
+        "name_en": "MusashiKosugi",
         "line_id": "shonan",
         "lat": 35.5751,
         "lng": 139.6631,
@@ -523,6 +671,7 @@ STATIONS = [
     {
         "id": "ss10",
         "name": "横浜駅",
+        "name_en": "Yokohama",
         "line_id": "shonan",
         "lat": 35.4658,
         "lng": 139.6223,
@@ -530,6 +679,7 @@ STATIONS = [
     {
         "id": "ss11",
         "name": "戸塚駅",
+        "name_en": "Totsuka",
         "line_id": "shonan",
         "lat": 35.3882,
         "lng": 139.5350,
@@ -537,6 +687,7 @@ STATIONS = [
     {
         "id": "ss12",
         "name": "大船駅",
+        "name_en": "Ofuna",
         "line_id": "shonan",
         "lat": 35.3532,
         "lng": 139.5312,
@@ -544,6 +695,7 @@ STATIONS = [
 ]
 
 
+# (以下 get_lines 等の関数はそのまま)
 def get_lines():
     return ALL_LINES
 

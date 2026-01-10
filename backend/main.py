@@ -37,25 +37,25 @@ def lines():
 @app.route("/api/stations")
 def get_stations():
     raw_line_id = request.args.get("line_id")
-
-    # line_idが指定されていない場合はstations.pyの全データを返す
     if not raw_line_id:
         return jsonify(stations.STATIONS)
 
     line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
 
-    # --- ODPT APIを使用したデータ取得 ---
     if line_id in LINE_MAP and ODPT_API_KEY:
         try:
-            # ODPTのStation取得APIを叩く
-            url = f"https://api.odpt.org/api/v4/odpt:Station?odpt:line=${LINE_MAP[line_id]}&acl:consumerKey=${ODPT_API_KEY}"
-            response = requests.get(url, timeout=5)
+            # 最新の公式エンドポイントを使用
+            url = f"https://api.odpt.org/api/v4/odpt:Station"
+            params = {"odpt:line": LINE_MAP[line_id], "acl:consumerKey": ODPT_API_KEY}
+            response = requests.get(url, params=params, timeout=5)
+
+            # ステータスコードが200以外なら例外を投げる
+            response.raise_for_status()
             api_data = response.json()
 
             if api_data:
                 formatted_stations = []
                 for s in api_data:
-                    # アプリが期待する形式（id, name, line_id, lat, lng）に変換
                     formatted_stations.append(
                         {
                             "id": s.get("owl:sameAs"),
@@ -65,18 +65,13 @@ def get_stations():
                             "lng": s.get("geo:long"),
                         }
                     )
-
-                # 駅名でソート（APIは順不同なことが多いため）
                 formatted_stations.sort(key=lambda x: x["name"])
-
-                print(f"📡 API SUCCESS: {line_id} ({len(formatted_stations)} stations)")
                 return jsonify(formatted_stations)
 
         except Exception as e:
-            print(f"⚠️ API Error: {e}")
+            print(f"⚠️ API Error for {line_id}: {e}")
 
-    # APIキーがない、またはAPI取得に失敗した場合はローカルの stations.py から取得
-    print(f"🏠 Falling back to local stations.py for: {line_id}")
+    # APIが失敗した場合のみ、ローカルのデータ（stations.py）を返す
     return jsonify(stations.get_stations_by_line(line_id))
 
 

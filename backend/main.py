@@ -11,7 +11,7 @@ CORS(app)
 
 # --- Gemini APIの設定 ---
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")  # 安定版の名前に変更
+model = genai.GenerativeModel("gemini-1.5-flash-latest")  # 安定版の名前に変更
 
 
 @app.route("/")

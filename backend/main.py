@@ -13,7 +13,15 @@ CORS(app)
 # --- Gemini APIの設定 ---
 # Renderの環境変数にGEMINI_API_KEYを設定してください
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+# 利用可能なモデルをログに表示するデバッグコード
+try:
+    print("--- Available Models ---")
+    for m in genai.list_models():
+        if "generateContent" in m.supported_generation_methods:
+            print(f"Model Name: {m.name}")
+except Exception as e:
+    print(f"Could not list models: {e}")
+model = genai.GenerativeModel("gemini-pro")
 
 
 @app.route("/")

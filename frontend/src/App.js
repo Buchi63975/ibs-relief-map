@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
-// 1. 環境設定
 const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
-// ここが stations.py の ALL_LINES 内の id と完全に一致している必要があります
 const LINE_CONFIG = {
   yamanote: { color: "#008000" },
   chuo: { color: "#ff8c00" },
@@ -26,7 +24,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
-  // 初期読み込み
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
@@ -38,17 +35,17 @@ function App() {
 
     fetch(`${API_BASE_URL}/api/stations`)
       .then((res) => res.json())
-      .then((data) => {
-        setAllStations(data);
-      })
+      .then((data) => setAllStations(data))
       .catch((err) => console.error("全駅データ取得失敗:", err));
   }, []);
 
-  // 路線ボタンクリック時の処理
   const handleLineClick = async (lineId) => {
-    // 徹底的に掃除: 文字列化 + 空白除去 + 小文字化
-    const cleanLineId = String(lineId).trim().toLowerCase();
-    console.log(`🔍 検索開始: "${cleanLineId}"`);
+    // 徹底的に掃除。引用符が含まれている可能性を排除
+    const cleanLineId = String(lineId)
+      .trim()
+      .toLowerCase()
+      .replace(/['"]+/g, "");
+    console.log(`🔍 リクエスト送信開始: ID="${cleanLineId}"`);
 
     setIsLoading(true);
     setSelectedLineStations([]);
@@ -57,29 +54,32 @@ function App() {
       const res = await fetch(
         `${API_BASE_URL}/api/stations?line_id=${cleanLineId}`
       );
-      const data = await res.json();
+      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
 
-      // 受信したデータが空でないか確認
+      const data = await res.json();
+      console.log(`📡 受信データ:`, data);
+
       if (data && data.length > 0) {
         setSelectedLineStations(data);
       } else {
-        console.warn(
-          "データが0件です。サーバー側のフィルタリングに失敗している可能性があります。"
+        // 画面にエラーを出して原因を可視化する
+        alert(
+          `路線「${cleanLineId}」の駅データが0件でした。サーバー側のstations.py内のline_idを確認してください。`
         );
-        alert(`「${cleanLineId}」の駅が見つかりませんでした。`);
       }
     } catch (err) {
-      console.error("通信エラー:", err);
+      console.error("駅データ取得エラー:", err);
+      alert("通信エラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --- StartNavigation, HandleEmergencyClick, FormatTime は以前と同じ ---
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
     setSelectedLineStations([]);
-
     try {
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
@@ -93,7 +93,6 @@ function App() {
         }),
       });
       const gptData = await gptRes.json();
-
       setAiMessage(gptData.message);
       setToiletInfo(gptData.toilet_info);
       setRouteSteps(
@@ -101,7 +100,6 @@ function App() {
       );
       setTimeLeft((gptData.minutes || 10) * 60 * 1000);
     } catch (err) {
-      console.error("AI連携失敗:", err);
       setAiMessage("通信エラー！駅の案内図を確認してください。");
     } finally {
       setIsLoading(false);
@@ -119,7 +117,6 @@ function App() {
         const { latitude, longitude } = pos.coords;
         let minDistance = Infinity;
         let nearest = null;
-
         allStations.forEach((s) => {
           const d = Math.sqrt(
             Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
@@ -129,10 +126,7 @@ function App() {
             nearest = s;
           }
         });
-
-        if (nearest) {
-          startNavigation(nearest, false);
-        }
+        if (nearest) startNavigation(nearest, false);
       },
       () => {
         alert("位置情報の取得に失敗しました。");
@@ -156,14 +150,16 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
-
         {!timeLeft && (
           <>
             <div className="line-selector">
               <p className="section-label">路線を選択してトイレを検索</p>
               <div className="line-buttons">
                 {lines.map((line) => {
-                  const cleanId = String(line.id).trim().toLowerCase();
+                  const cleanId = String(line.id)
+                    .trim()
+                    .toLowerCase()
+                    .replace(/['"]+/g, "");
                   return (
                     <button
                       key={line.id}
@@ -179,7 +175,6 @@ function App() {
                 })}
               </div>
             </div>
-
             <div className="emergency-section">
               <button
                 className="big-emergency-btn"

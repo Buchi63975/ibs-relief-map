@@ -1,18 +1,27 @@
 import os
+import requests  # 外部API取得用に追加
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import google.generativeai as genai
-
-# 既存の駅データ管理用ファイルをインポート
 import stations
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
 
-# --- Gemini APIの設定 ---
+# --- 設定 ---
+ODPT_API_KEY = os.environ.get("ODPT_API_KEY")
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-# 安定版のモデル名を指定
 model = genai.GenerativeModel("models/gemini-flash-latest")
+
+# フロントエンドのIDとODPTの正式な路線識別子(URN)の紐付け
+LINE_MAP = {
+    "yamanote": "odpt.Line:JR-East.Yamanote",
+    "chuo": "odpt.Line:JR-East.ChuoRapid",
+    "saikyo": "odpt.Line:JR-East.Saikyo",
+    "shonan": "odpt.Line:JR-East.ShonanShinjuku",
+    "denentoshi": "odpt.Line:Tokyu.DenEnToshi",
+    "hanzomon": "odpt.Line:TokyoMetro.Hanzomon",
+}
 
 
 @app.route("/")
@@ -22,40 +31,57 @@ def serve():
 
 @app.route("/api/lines")
 def lines():
-    """路線一覧を返します"""
     return jsonify(stations.ALL_LINES)
 
 
 @app.route("/api/stations")
 def get_stations():
-    """駅リストを取得します。line_id があればフィルタリングします"""
     raw_line_id = request.args.get("line_id")
 
-    # 1. line_id が指定されている場合（ボタン押下時）
-    if raw_line_id:
-        # --- 徹底的な正規化処理 ---
-        # 前後の空白除去、引用符の除去、小文字化を行い、判定ミスを防ぎます
-        line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
+    # line_idが指定されていない場合はstations.pyの全データを返す
+    if not raw_line_id:
+        return jsonify(stations.STATIONS)
 
-        data = stations.get_stations_by_line(line_id)
+    line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
 
-        # サーバーログに出力（Renderのログで確認可能）
-        print(f"--- [API DEBUG] ---")
-        print(f"Raw Line ID from Frontend: '{raw_line_id}'")
-        print(f"Cleaned Line ID: '{line_id}'")
-        print(f"Found Stations Count: {len(data)}")
-        print(f"-------------------")
+    # --- ODPT APIを使用したデータ取得 ---
+    if line_id in LINE_MAP and ODPT_API_KEY:
+        try:
+            # ODPTのStation取得APIを叩く
+            url = f"https://api-tokyochallenge.odpt.jp/api/v4/odpt:Station?odpt:line={LINE_MAP[line_id]}&acl:consumerKey={ODPT_API_KEY}"
+            response = requests.get(url, timeout=5)
+            api_data = response.json()
 
-        return jsonify(data)
+            if api_data:
+                formatted_stations = []
+                for s in api_data:
+                    # アプリが期待する形式（id, name, line_id, lat, lng）に変換
+                    formatted_stations.append(
+                        {
+                            "id": s.get("owl:sameAs"),
+                            "name": s.get("dc:title", "不明な駅"),
+                            "line_id": line_id,
+                            "lat": s.get("geo:lat"),
+                            "lng": s.get("geo:long"),
+                        }
+                    )
 
-    # 2. line_id が指定されていない場合（アプリ起動時の全駅データ取得）
-    print(f"DEBUG: Returning all {len(stations.STATIONS)} stations.")
-    return jsonify(stations.STATIONS)
+                # 駅名でソート（APIは順不同なことが多いため）
+                formatted_stations.sort(key=lambda x: x["name"])
+
+                print(f"📡 API SUCCESS: {line_id} ({len(formatted_stations)} stations)")
+                return jsonify(formatted_stations)
+
+        except Exception as e:
+            print(f"⚠️ API Error: {e}")
+
+    # APIキーがない、またはAPI取得に失敗した場合はローカルの stations.py から取得
+    print(f"🏠 Falling back to local stations.py for: {line_id}")
+    return jsonify(stations.get_stations_by_line(line_id))
 
 
 @app.route("/api/gpt-prediction", methods=["POST"])
 def gpt_prediction():
-    """Gemini APIを使用してトイレ情報と励ましメッセージを生成します"""
     data = request.json
     lat = data.get("lat")
     lng = data.get("lng")
@@ -95,6 +121,5 @@ def gpt_prediction():
 
 
 if __name__ == "__main__":
-    # Renderなどのホスティング環境では PORT 環境変数を使用
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

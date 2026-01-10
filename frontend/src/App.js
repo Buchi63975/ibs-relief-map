@@ -11,8 +11,8 @@ const LINE_CONFIG = {
   chuo: { color: "#ff8c00" },
   saikyo: { color: "#00ac9a" },
   shonan: { color: "#e62222" },
-  denentoshi: { color: "#20af3c" }, // ここが "denentoshi" になっているか
-  hanzomon: { color: "#9b7cb6" }, // ここが "hanzomon" になっているか
+  denentoshi: { color: "#20af3c" },
+  hanzomon: { color: "#9b7cb6" },
 };
 
 function App() {
@@ -46,9 +46,9 @@ function App() {
 
   // 路線ボタンクリック時の処理
   const handleLineClick = async (lineId) => {
-    // IDをクリーンアップ（見えない改行対策）
-    const cleanLineId = lineId.trim();
-    console.log(`🔍 リクエスト送信開始: ID="${cleanLineId}"`);
+    // 徹底的に掃除: 文字列化 + 空白除去 + 小文字化
+    const cleanLineId = String(lineId).trim().toLowerCase();
+    console.log(`🔍 検索開始: "${cleanLineId}"`);
 
     setIsLoading(true);
     setSelectedLineStations([]);
@@ -57,19 +57,19 @@ function App() {
       const res = await fetch(
         `${API_BASE_URL}/api/stations?line_id=${cleanLineId}`
       );
-      if (!res.ok) throw new Error(`サーバーエラー: ${res.status}`);
-
       const data = await res.json();
-      console.log(`📡 受信データ数: ${data.length}件`);
 
+      // 受信したデータが空でないか確認
       if (data && data.length > 0) {
         setSelectedLineStations(data);
       } else {
-        alert(`路線ID: "${cleanLineId}" の駅データが見つかりませんでした。`);
+        console.warn(
+          "データが0件です。サーバー側のフィルタリングに失敗している可能性があります。"
+        );
+        alert(`「${cleanLineId}」の駅が見つかりませんでした。`);
       }
     } catch (err) {
-      console.error("駅データ取得エラー:", err);
-      alert("駅の取得に失敗しました。サーバーのログを確認してください。");
+      console.error("通信エラー:", err);
     } finally {
       setIsLoading(false);
     }
@@ -163,19 +163,14 @@ function App() {
               <p className="section-label">路線を選択してトイレを検索</p>
               <div className="line-buttons">
                 {lines.map((line) => {
-                  // サーバーから届いたIDを、ここでもう一度徹底的に掃除する
-                  const rawId = String(line.id);
-                  const cleanId = rawId.trim().toLowerCase();
-
+                  const cleanId = String(line.id).trim().toLowerCase();
                   return (
                     <button
                       key={line.id}
                       className="line-btn"
                       style={{
-                        // LINE_CONFIGのキーと確実に一致させる
                         backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
                       }}
-                      // クリック時に送るIDも、この掃除済みのcleanIdを使う
                       onClick={() => handleLineClick(cleanId)}
                     >
                       {line.name}

@@ -11,8 +11,8 @@ const LINE_CONFIG = {
   chuo: { color: "#ff8c00" },
   saikyo: { color: "#00ac9a" },
   shonan: { color: "#e62222" },
-  denentoshi: { color: "#20af3c" },
-  hanzomon: { color: "#9b7cb6" },
+  denentoshi: { color: "#20af3c" }, // ここが "denentoshi" になっているか
+  hanzomon: { color: "#9b7cb6" }, // ここが "hanzomon" になっているか
 };
 
 function App() {

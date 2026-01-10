@@ -1,10 +1,10 @@
 ALL_LINES = [
+    {"id": "denentoshi", "name": "東急田園都市線", "color": "#20af3c"},
+    {"id": "hanzomon", "name": "東京メトロ半蔵門線", "color": "#9b7cb6"},
     {"id": "yamanote", "name": "山手線", "color": "#008000"},
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},
     {"id": "saikyo", "name": "埼京線", "color": "#00ac9a"},
-    {"id": "shonan", "name": "湘南新宿ライン", "color": "#e62222"},
-    {"id": "denentoshi", "name": "東急田園都市線", "color": "#20af3c"},
-    {"id": "hanzomon", "name": "東京メトロ半蔵門線", "color": "#9b7cb6"},
+    {"id": "shonan", "name": "湘南新宿ライン", "color": "#e62222"}
 ]
 
 # 駅データ (4路線・全85駅)
@@ -1057,3 +1057,4 @@ def get_station_by_id(station_id):
         )
         return {**station, "line_color": line_color}
     return None
+

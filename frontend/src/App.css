@@ -1,7 +1,7 @@
 /* --- ベースレイアウト --- */
 .App {
   text-align: center;
-  background-color: #121213; /* 深めのダーク背景で眩しさを抑える */
+  background-color: #121213; /* 深めのダーク背景 */
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -55,40 +55,71 @@
   font-weight: bold;
   font-size: 0.8rem;
   cursor: pointer;
+  transition: opacity 0.2s;
 }
 
+.line-btn:active {
+  opacity: 0.7;
+}
+
+/* 駅リスト：全駅追加に対応したスクロール設定 */
 .station-list-overlay {
   margin-top: 15px;
   background: #2d2d2e;
   padding: 12px;
   border-radius: 12px;
-  max-height: 250px;
+  max-height: 350px; /* 以前より少し広げて探しやすく */
   overflow-y: auto;
   border: 1px solid #444;
 }
 
+/* 駅グリッド：3列にこだわらず画面幅で自動調整 */
 .station-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
   gap: 8px;
 }
 
+/* 駅ボタン：長い駅名（南町田グランベリーパーク等）対策 */
 .station-select-btn {
   background: #444;
   color: white;
-  border: none;
-  padding: 12px 5px;
+  border: 1px solid #555;
+  padding: 10px 4px;
   border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  word-break: break-all; /* 枠内での改行を許可 */
+  line-height: 1.2;
+}
+
+.station-select-btn:active {
+  background: #666;
+}
+
+/* 閉じるボタン */
+.close-list-btn {
+  width: 100%;
+  margin-top: 12px;
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: bold;
+  cursor: pointer;
 }
 
 /* --- 2. 中央の緊急ボタン --- */
-.divider {
+.emergency-section {
   width: 100%;
-  height: 1px;
-  background-color: #333;
-  margin: 25px 0;
+  margin: 30px 0;
 }
 
 .big-emergency-btn {
@@ -96,12 +127,18 @@
   color: white;
   font-size: 1.3rem;
   font-weight: 900;
-  padding: 30px 20px;
+  padding: 25px 20px;
   border-radius: 20px;
   border: none;
   box-shadow: 0 8px 20px rgba(255, 60, 60, 0.3);
   width: 100%;
   max-width: 320px;
+  cursor: pointer;
+}
+
+.big-emergency-btn:disabled {
+  background: #666;
+  box-shadow: none;
 }
 
 /* --- 3. カウントダウン＆案内カード --- */
@@ -111,8 +148,7 @@
   padding: 20px;
   border-radius: 24px;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-  width: 95%;
-  margin-top: -10px;
+  width: 100%;
   box-sizing: border-box;
   animation: slideUp 0.4s ease-out;
 }
@@ -135,12 +171,12 @@
 }
 
 .timer-display {
-  font-size: 3.8rem;
+  font-size: 3.5rem;
   font-weight: 900;
   color: #ff4b4b;
   margin: 5px 0;
   font-family: "Courier New", Courier, monospace;
-  font-variant-numeric: tabular-nums; /* 数字の幅を固定 */
+  font-variant-numeric: tabular-nums;
 }
 
 /* 乗り換えルート案内 */
@@ -187,10 +223,10 @@
   color: #333;
 }
 
-/* --- トイレ位置予測ボックス (最重要) --- */
+/* --- トイレ位置予測ボックス --- */
 .toilet-location-box {
-  background: #fff9db; /* 重要情報を表す薄黄色 */
-  border: 2px solid #fab005; /* 強調のオレンジ線 */
+  background: #fff9db;
+  border: 2px solid #fab005;
   border-radius: 12px;
   padding: 15px;
   margin: 15px 0;
@@ -209,24 +245,8 @@
   font-size: 1rem;
   font-weight: 800;
   color: #222;
-  margin-bottom: 12px;
+  margin-bottom: 0px;
   line-height: 1.4;
-}
-
-.floor-map-btn {
-  background: #ffffff;
-  color: #444;
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  width: 100%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
 }
 
 /* AI励ましバブル */
@@ -259,4 +279,5 @@
   color: #666;
   font-weight: bold;
   width: 100%;
+  cursor: pointer;
 }

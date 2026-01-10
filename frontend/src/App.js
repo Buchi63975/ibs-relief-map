@@ -6,44 +6,62 @@ const ODPT_KEY =
   "3ajj8d8clgnedp3ea1248ccq9iythkds9ipunph5m9dfw13yu5lqq6p1ny8t3b4t";
 const ODPT_BASE_URL = "https://api.odpt.org/api/v4";
 
-// APIの接続先（開発環境と本番環境を自動切り替え）
 const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
-// 路線ごとの詳細設定（トイレ位置・ID・平均走行時間）
+// --- 【更新】路線ごとの詳細設定（田園都市線・半蔵門線を追加） ---
 const LINE_CONFIG = {
   saikyo: {
-    odptId: "odpt.Railway:JR-East.Saikyo",
+    operator: "JR-East",
+    odptLine: "Saikyo",
     toilet:
       "2号車または10号車付近のエスカレーターを上がると南口改札内にあります。",
     avgTravel: 15,
     color: "#00ac9a",
   },
   yamanote: {
-    odptId: "odpt.Railway:JR-East.Yamanote",
+    operator: "JR-East",
+    odptLine: "Yamanote",
     toilet:
       "11号車（一番前）または7号車付近の階段・エスカレーターがトイレに近いです。",
     avgTravel: 10,
     color: "#9acd32",
   },
   chuo: {
-    odptId: "odpt.Railway:JR-East.ChuoQuick",
+    operator: "JR-East",
+    odptLine: "ChuoQuick",
     toilet:
       "1号車付近の階段を降りた「中央改札内」コンコースに大きなトイレがあります。",
     avgTravel: 12,
     color: "#f15a22",
   },
   shonan: {
-    odptId: "odpt.Railway:JR-East.ShonanShinjuku",
+    operator: "JR-East",
+    odptLine: "ShonanShinjuku",
     toilet:
       "ホームの南端（新宿寄り）にあるエスカレーター付近の改札内にトイレがあります。",
     avgTravel: 15,
     color: "#e21b13",
   },
+  denentoshi: {
+    operator: "Tokyu",
+    odptLine: "DenEnToshi",
+    toilet:
+      "各駅の改札付近に設置されています。渋谷駅は地下1階のA8出口付近が近いです。",
+    avgTravel: 18,
+    color: "#20af3c",
+  },
+  hanzomon: {
+    operator: "TokyoMetro",
+    odptLine: "Hanzomon",
+    toilet:
+      "ホーム中央付近のエスカレーターを上がった改札内にトイレがある駅が多いです。",
+    avgTravel: 14,
+    color: "#9b7cb6",
+  },
 };
 
 function App() {
-  // --- ステート管理 ---
   const [lines, setLines] = useState([]);
   const [allStations, setAllStations] = useState([]);
   const [selectedLineStations, setSelectedLineStations] = useState([]);
@@ -54,13 +72,21 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
-  // --- 1. 初期データ読み込み ---
+  // --- 1. 初期データ読み込み（新しい路線IDを追加） ---
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
       .then(setLines);
 
-    const lineIds = ["yamanote", "chuo", "saikyo", "shonan"];
+    // 【修正】取得する路線IDに新路線を追加
+    const lineIds = [
+      "yamanote",
+      "chuo",
+      "saikyo",
+      "shonan",
+      "denentoshi",
+      "hanzomon",
+    ];
     lineIds.forEach((id) => {
       fetch(`${API_BASE_URL}/api/stations?line_id=${id}`)
         .then((res) => res.json())
@@ -68,7 +94,6 @@ function App() {
     });
   }, []);
 
-  // --- 2. 10ミリ秒精度のタイマー ---
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -84,35 +109,32 @@ function App() {
     setSelectedLineStations([]);
 
     try {
-      // A. ODPTからリアルタイムの時刻表を取得
-      // 駅IDの組み立て (例: odpt.Station:JR-East.Saikyo.Akabane)
       const lineKey = targetStation.line_id;
-      const config = LINE_CONFIG[lineKey] || LINE_CONFIG["saikyo"];
+      // LINE_CONFIGから設定を取得（会社名と路線名）
+      const config = LINE_CONFIG[lineKey] || LINE_CONFIG["yamanote"];
 
-      // 英語名がない場合のフォールバック（本番ではDBに英語名を持たせるのが理想）
-      const stationNameEn = targetStation.name_en || "Shinjuku";
-      const odptStationId = `odpt.Station:JR-East.${
-        lineKey === "chuo"
-          ? "ChuoQuick"
-          : lineKey.charAt(0).toUpperCase() + lineKey.slice(1)
-      }.${stationNameEn}`;
+      const stationNameEn = targetStation.name_en || "Shibuya";
+
+      // 【重要】鉄道会社(config.operator)と路線名(config.odptLine)を動的に組み込む
+      const odptStationId = `odpt.Station:${config.operator}.${config.odptLine}.${stationNameEn}`;
 
       const timetableUrl = `${ODPT_BASE_URL}/odpt:StationTimetable?odpt:station=${odptStationId}&acl:consumerKey=${ODPT_KEY}`;
       const ttRes = await fetch(timetableUrl);
       const ttData = await ttRes.json();
 
-      // 現在時刻から「次の電車」を計算
       const now = new Date();
       const currentMin = now.getHours() * 60 + now.getMinutes();
-      let waitMinutes = 5; // データがない場合のデフォルト
+      let waitMinutes = 5;
 
-      if (ttData.length > 0) {
+      if (ttData && ttData.length > 0) {
         const dayType =
           now.getDay() === 0 || now.getDay() === 6
             ? "odpt.Calendar:SaturdayHoliday"
             : "odpt.Calendar:Weekday";
+
         const timetable =
           ttData.find((t) => t["odpt:calendar"] === dayType) || ttData[0];
+
         const nextTrain = timetable["odpt:stationTimetableObject"].find(
           (obj) => {
             const [h, m] = obj["odpt:departureTime"].split(":").map(Number);
@@ -127,10 +149,8 @@ function App() {
         }
       }
 
-      // 予測所要時間 = 待ち時間 + 平均走行時間
       const totalPrediction = waitMinutes + config.avgTravel;
 
-      // B. 既存のAI励ましメッセージも取得
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +158,6 @@ function App() {
       });
       const gptData = await gptRes.json();
 
-      // C. 各ステートを更新（12分固定を卒業！）
       setAiMessage(gptData.message);
       setRouteSteps([
         `今から ${waitMinutes} 分後の電車に乗車予定です`,
@@ -150,12 +169,11 @@ function App() {
     } catch (err) {
       console.error("Navigation Error:", err);
       setAiMessage("データ取得に失敗しましたが、お尻を締めて急いで！");
-      setTimeLeft(12 * 60 * 1000); // 失敗時のみ以前の12分を出す
+      setTimeLeft(12 * 60 * 1000);
     }
     setIsLoading(false);
   };
 
-  // --- ハンドラー ---
   const handleLineClick = (lineId) => {
     const filtered = allStations.filter((s) => s.line_id === lineId);
     setSelectedLineStations(filtered);
@@ -196,7 +214,6 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
-
         <div className="line-selector">
           <p className="section-label">路線を選択してトイレを検索</p>
           <div className="line-buttons">
@@ -251,7 +268,6 @@ function App() {
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>
             <div className="timer-display">{formatTime(timeLeft)}</div>
-
             <div className="route-guide">
               <span className="guide-title">🏁 リアルタイム乗換案内</span>
               {routeSteps.map((step, index) => (
@@ -261,19 +277,16 @@ function App() {
                 </div>
               ))}
             </div>
-
             <div className="toilet-location-box">
               <span className="location-label">
                 📍 おすすめ乗車位置とトイレ
               </span>
               <p className="location-text">{toiletInfo}</p>
             </div>
-
             <div className="ai-bubble">
               <span className="ai-icon">🤖 AIサポーター:</span>
               <p className="ai-text">{aiMessage}</p>
             </div>
-
             <button
               className="reset-btn"
               onClick={() => {

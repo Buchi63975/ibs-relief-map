@@ -64,13 +64,19 @@
 
 /* 駅リスト：全駅追加に対応したスクロール設定 */
 .station-list-overlay {
-  margin-top: 15px;
+  position: fixed; /* 画面に固定 */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 中央配置 */
+  z-index: 1000; /* 最前面に */
+  width: 90%;
+  max-width: 400px;
   background: #2d2d2e;
-  padding: 12px;
-  border-radius: 12px;
-  max-height: 350px; /* 以前より少し広げて探しやすく */
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+  max-height: 80vh;
   overflow-y: auto;
-  border: 1px solid #444;
 }
 
 /* 駅グリッド：3列にこだわらず画面幅で自動調整 */

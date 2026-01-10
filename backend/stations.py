@@ -1033,10 +1033,19 @@ def get_lines():
 
 
 def get_stations_by_line(line_id):
-    line_color = next((l["color"] for l in ALL_LINES if l["id"] == line_id), "#333333")
-    return [
-        {**s, "line_color": line_color} for s in STATIONS if s["line_id"] == line_id
+    # line_id が一致するものを抽出（念のため strip() で空白を除去）
+    line_color = next(
+        (l["color"] for l in ALL_LINES if l["id"] == line_id.strip()), "#333333"
+    )
+
+    # フィルタリング
+    filtered_stations = [
+        {**s, "line_color": line_color}
+        for s in STATIONS
+        if s["line_id"] == line_id.strip()
     ]
+
+    return filtered_stations
 
 
 def get_station_by_id(station_id):

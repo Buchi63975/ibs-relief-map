@@ -6,10 +6,10 @@ const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
 const LINE_CONFIG = {
+  yamanote: { color: "#008000" },
+  chuo: { color: "#ff8c00" },
   saikyo: { color: "#00ac9a" },
-  yamanote: { color: "#9acd32" },
-  chuo: { color: "#f15a22" },
-  shonan: { color: "#e21b13" },
+  shonan: { color: "#e62222" },
   denentoshi: { color: "#20af3c" },
   hanzomon: { color: "#9b7cb6" },
 };
@@ -25,15 +25,16 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
-  // 初期読み込み：路線リストと「緊急用」の全駅データを取得
+  // 初期読み込み
   useEffect(() => {
-    // 路線一覧を取得
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
-      .then(setLines)
+      .then((data) => {
+        setLines(data);
+        console.log("✅ 取得した路線一覧:", data);
+      })
       .catch((err) => console.error("路線取得失敗:", err));
 
-    // 全駅データを取得（緊急ボタンの距離計算用）
     fetch(`${API_BASE_URL}/api/stations`)
       .then((res) => res.json())
       .then((data) => {
@@ -43,23 +44,29 @@ function App() {
       .catch((err) => console.error("全駅データ取得失敗:", err));
   }, []);
 
-  // --- 修正ポイント：ボタンクリック時にAPIから直接その路線の駅を取得する ---
+  // 路線ボタンクリック時の処理
   const handleLineClick = async (lineId) => {
-    console.log("選択された路線ID:", lineId);
+    console.log("🔍 選択された路線ID:", lineId);
     setIsLoading(true);
+    setSelectedLineStations([]); // リストを一旦クリア
+
     try {
-      // 指定した路線の駅だけをバックエンドから取得
+      // line_idをクエリパラメータとして送信
       const res = await fetch(`${API_BASE_URL}/api/stations?line_id=${lineId}`);
       const data = await res.json();
+
+      console.log(`📡 ${lineId} の駅データ受信:`, data);
 
       if (data && data.length > 0) {
         setSelectedLineStations(data);
       } else {
-        alert("駅リストが空です。サーバーのデータを確認してください。");
+        alert(
+          `エラー: 「${lineId}」の駅リストが空です。バックエンドのID一致を確認してください。`
+        );
       }
     } catch (err) {
       console.error("駅データ取得エラー:", err);
-      alert("駅データの取得に失敗しました。");
+      alert("通信に失敗しました。サーバーが起動しているか確認してください。");
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +75,7 @@ function App() {
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
-    setSelectedLineStations([]); // リストを閉じる
+    setSelectedLineStations([]);
 
     try {
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
@@ -78,7 +85,7 @@ function App() {
           station_name: targetStation.name,
           lat: targetStation.lat,
           lng: targetStation.lng,
-          line_id: targetStation.line_id, // 路線情報も渡す
+          line_id: targetStation.line_id,
           is_manual: isManual,
         }),
       });
@@ -121,7 +128,7 @@ function App() {
         });
 
         if (nearest) {
-          console.log("最寄駅判定:", nearest.name);
+          console.log("📍 最寄駅判定:", nearest.name);
           startNavigation(nearest, false);
         }
       },
@@ -174,13 +181,14 @@ function App() {
                 onClick={handleEmergencyClick}
                 disabled={isLoading}
               >
-                {isLoading ? "解析中..." : "🚨 最寄りのトイレへ直行"}
+                {isLoading && !selectedLineStations.length
+                  ? "解析中..."
+                  : "🚨 最寄りのトイレへ直行"}
               </button>
             </div>
           </>
         )}
 
-        {/* 駅一覧ポップアップ */}
         {selectedLineStations.length > 0 && !timeLeft && (
           <div className="station-list-overlay">
             <div className="station-grid">
@@ -203,7 +211,6 @@ function App() {
           </div>
         )}
 
-        {/* 案内画面 */}
         {timeLeft !== null && (
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>

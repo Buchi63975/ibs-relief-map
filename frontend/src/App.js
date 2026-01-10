@@ -160,14 +160,19 @@ function App() {
                     .trim()
                     .toLowerCase()
                     .replace(/['"]+/g, "");
+                  console.log("render line button:", cleanId, line);
                   return (
                     <button
                       key={line.id}
                       className="line-btn"
+                      data-line={cleanId}
                       style={{
                         backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
                       }}
-                      onClick={() => handleLineClick(cleanId)}
+                      onClick={(e) => {
+                        console.log("line button clicked:", cleanId, e);
+                        handleLineClick(cleanId);
+                      }}
                     >
                       {line.name}
                     </button>

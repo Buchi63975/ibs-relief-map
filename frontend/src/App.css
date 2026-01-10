@@ -31,6 +31,9 @@
   padding: 15px;
   border-radius: 15px;
   box-sizing: border-box;
+  position: relative;
+  z-index: 2000;
+  outline: 2px dashed rgba(255, 255, 255, 0.08);
 }
 
 .section-label {
@@ -45,6 +48,8 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
+  position: relative;
+  z-index: 2001;
 }
 
 .line-btn {

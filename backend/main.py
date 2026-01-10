@@ -38,23 +38,20 @@ def lines():
 def get_stations():
     raw_line_id = request.args.get("line_id")
     if not raw_line_id:
-        print("📡 /api/stations called (no line_id) -> returning all stations")
         return jsonify(stations.STATIONS)
 
     line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
-    print(f"📡 /api/stations called with line_id='{line_id}'")
 
     if line_id in LINE_MAP and ODPT_API_KEY:
         try:
-            url = "https://api.odpt.org/api/v4/odpt:Station"
+            # 最新の公式エンドポイントを使用
+            url = f"https://api.odpt.org/api/v4/odpt:Station?odpt:line=${LINE_MAP[line_id]}&acl:consumerKey=${ODPT_API_KEY}"
             params = {"odpt:line": LINE_MAP[line_id], "acl:consumerKey": ODPT_API_KEY}
-            print(f"➡️ 外部APIへ問い合わせ: url={url} params={params}")
             response = requests.get(url, params=params, timeout=5)
+
+            # ステータスコードが200以外なら例外を投げる
             response.raise_for_status()
             api_data = response.json()
-            print(
-                f"⬅️ 外部APIステータス={response.status_code} items={len(api_data) if isinstance(api_data, list) else 'N/A'}"
-            )
 
             if api_data:
                 formatted_stations = []
@@ -74,10 +71,8 @@ def get_stations():
         except Exception as e:
             print(f"⚠️ API Error for {line_id}: {e}")
 
-    # 外部APIが使えない／データがない場合はローカルデータを返す
-    local = stations.get_stations_by_line(line_id)
-    print(f"🔁 ローカルデータを返却 count={len(local)}")
-    return jsonify(local)
+    # APIが失敗した場合のみ、ローカルのデータ（stations.py）を返す
+    return jsonify(stations.get_stations_by_line(line_id))
 
 
 @app.route("/api/gpt-prediction", methods=["POST"])

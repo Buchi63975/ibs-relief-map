@@ -4,6 +4,8 @@ ALL_LINES = [
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},
     {"id": "saikyo", "name": "埼京線", "color": "#00ac9a"},
     {"id": "shonan", "name": "湘南新宿ライン", "color": "#e62222"},
+    {"id": "denentoshi", "name": "東急田園都市線", "color": "#20af3c"},
+    {"id": "hanzomon", "name": "東京メトロ半蔵門線", "color": "#9b7cb6"},
 ]
 
 # 駅データ (4路線・全85駅)
@@ -692,16 +694,6 @@ STATIONS = [
         "lat": 35.3532,
         "lng": 139.5312,
     },
-]
-# --- 追加する路線データ (ALL_LINES) ---
-# すでに前回の回答で追加済みの場合はスキップしてください
-ADDITIONAL_LINES = [
-    {"id": "denentoshi", "name": "東急田園都市線", "color": "#20af3c"},
-    {"id": "hanzomon", "name": "東京メトロ半蔵門線", "color": "#9b7cb6"},
-]
-
-# --- 追加する全駅データ (STATIONSに追加) ---
-ADDITIONAL_STATIONS = [
     # --- 東急田園都市線 (27駅) ---
     {
         "id": "dt01",

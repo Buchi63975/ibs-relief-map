@@ -48,7 +48,7 @@ def get_stations():
     if line_id in LINE_MAP and ODPT_API_KEY:
         try:
             # ODPTのStation取得APIを叩く
-            url = f"https://api-tokyochallenge.odpt.jp/api/v4/odpt:Station?odpt:line={LINE_MAP[line_id]}&acl:consumerKey={ODPT_API_KEY}"
+            url = f"https://api.odpt.org/api/v4/odpt:Station?odpt:line=${LINE_MAP[line_id]}&acl:consumerKey=${ODPT_API_KEY}"
             response = requests.get(url, timeout=5)
             api_data = response.json()
 

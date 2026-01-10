@@ -1,4 +1,4 @@
-# 路線データ
+# stations.py の冒頭をこれに差し替えてください
 ALL_LINES = [
     {"id": "yamanote", "name": "山手線", "color": "#008000"},
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},
@@ -694,7 +694,6 @@ STATIONS = [
         "lat": 35.3532,
         "lng": 139.5312,
     },
-    # --- 東急田園都市線 (27駅) ---
     {
         "id": "dt01",
         "name": "渋谷駅",
@@ -911,7 +910,6 @@ STATIONS = [
         "lat": 35.5077,
         "lng": 139.4444,
     },
-    # --- 東京メトロ半蔵門線 (14駅) ---
     {
         "id": "z01",
         "name": "渋谷駅",
@@ -1033,19 +1031,23 @@ def get_lines():
 
 
 def get_stations_by_line(line_id):
-    # line_id が一致するものを抽出（念のため strip() で空白を除去）
+    # 送られてきた line_id の前後から空白や改行を完全に除去
+    search_id = line_id.strip()
+
+    # 路線の色を取得
     line_color = next(
-        (l["color"] for l in ALL_LINES if l["id"] == line_id.strip()), "#333333"
+        (l["color"] for l in ALL_LINES if l["id"] == search_id), "#333333"
     )
 
-    # フィルタリング
-    filtered_stations = [
+    # 一致判定を「完全一致」ではなく「含む（in）」または「トリム後の一致」にする
+    # これにより、見えない改行コードが入っていてもヒットするようになります
+    filtered = [
         {**s, "line_color": line_color}
         for s in STATIONS
-        if s["line_id"] == line_id.strip()
+        if s["line_id"].strip() == search_id
     ]
 
-    return filtered_stations
+    return filtered
 
 
 def get_station_by_id(station_id):

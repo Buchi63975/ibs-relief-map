@@ -26,18 +26,18 @@ def lines():
 
 @app.route("/api/stations")
 def get_stations():
-    """駅リストを取得します"""
     line_id = request.args.get("line_id")
 
-    # 1. line_id が指定されている場合（ボタン押下時）
     if line_id:
+        line_id = line_id.strip()  # 前後の空白を削除
         data = stations.get_stations_by_line(line_id)
-        print(f"DEBUG: {line_id} の駅を {len(data)} 件返します")
+        # ログを詳細化
+        print(f"--- DEBUG START ---")
+        print(f"Requested Line ID: '{line_id}'")
+        print(f"Result Count: {len(data)}")
+        print(f"--- DEBUG END ---")
         return jsonify(data)
 
-    # 2. line_id が指定されていない場合（アプリ起動時・最寄り駅検索用）
-    # これがないと、新しい駅が検索対象に入りません
-    print(f"DEBUG: 全駅データ（{len(stations.STATIONS)}件）を返します")
     return jsonify(stations.STATIONS)
 
 

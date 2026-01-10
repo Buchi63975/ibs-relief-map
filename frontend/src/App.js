@@ -5,6 +5,7 @@ import "./App.css";
 const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
+// ここが stations.py の ALL_LINES 内の id と完全に一致している必要があります
 const LINE_CONFIG = {
   yamanote: { color: "#008000" },
   chuo: { color: "#ff8c00" },
@@ -39,34 +40,36 @@ function App() {
       .then((res) => res.json())
       .then((data) => {
         setAllStations(data);
-        console.log(`✅ 全駅データ同期完了: ${data.length}件`);
       })
       .catch((err) => console.error("全駅データ取得失敗:", err));
   }, []);
 
   // 路線ボタンクリック時の処理
   const handleLineClick = async (lineId) => {
-    console.log("🔍 選択された路線ID:", lineId);
+    // IDをクリーンアップ（見えない改行対策）
+    const cleanLineId = lineId.trim();
+    console.log(`🔍 リクエスト送信開始: ID="${cleanLineId}"`);
+
     setIsLoading(true);
-    setSelectedLineStations([]); // リストを一旦クリア
+    setSelectedLineStations([]);
 
     try {
-      // line_idをクエリパラメータとして送信
-      const res = await fetch(`${API_BASE_URL}/api/stations?line_id=${lineId}`);
-      const data = await res.json();
+      const res = await fetch(
+        `${API_BASE_URL}/api/stations?line_id=${cleanLineId}`
+      );
+      if (!res.ok) throw new Error(`サーバーエラー: ${res.status}`);
 
-      console.log(`📡 ${lineId} の駅データ受信:`, data);
+      const data = await res.json();
+      console.log(`📡 受信データ数: ${data.length}件`);
 
       if (data && data.length > 0) {
         setSelectedLineStations(data);
       } else {
-        alert(
-          `エラー: 「${lineId}」の駅リストが空です。バックエンドのID一致を確認してください。`
-        );
+        alert(`路線ID: "${cleanLineId}" の駅データが見つかりませんでした。`);
       }
     } catch (err) {
       console.error("駅データ取得エラー:", err);
-      alert("通信に失敗しました。サーバーが起動しているか確認してください。");
+      alert("駅の取得に失敗しました。サーバーのログを確認してください。");
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +110,7 @@ function App() {
 
   const handleEmergencyClick = () => {
     if (allStations.length === 0) {
-      alert("駅データを読み込み中です。数秒待ってからやり直してください。");
+      alert("駅データを読み込み中です。");
       return;
     }
     setIsLoading(true);
@@ -128,12 +131,11 @@ function App() {
         });
 
         if (nearest) {
-          console.log("📍 最寄駅判定:", nearest.name);
           startNavigation(nearest, false);
         }
       },
       () => {
-        alert("位置情報の取得に失敗しました。設定を確認してください。");
+        alert("位置情報の取得に失敗しました。");
         setIsLoading(false);
       },
       { enableHighAccuracy: true }
@@ -160,18 +162,23 @@ function App() {
             <div className="line-selector">
               <p className="section-label">路線を選択してトイレを検索</p>
               <div className="line-buttons">
-                {lines.map((line) => (
-                  <button
-                    key={line.id}
-                    className="line-btn"
-                    style={{
-                      backgroundColor: LINE_CONFIG[line.id]?.color || "#666",
-                    }}
-                    onClick={() => handleLineClick(line.id)}
-                  >
-                    {line.name}
-                  </button>
-                ))}
+                {lines.map((line) => {
+                  // IDをクリーンアップ
+                  const cleanId = line.id.trim();
+                  return (
+                    <button
+                      key={line.id}
+                      className="line-btn"
+                      style={{
+                        backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
+                      }}
+                      // onClickに渡す値もトリムする
+                      onClick={() => handleLineClick(cleanId)}
+                    >
+                      {line.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

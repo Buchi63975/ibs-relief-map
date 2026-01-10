@@ -4,14 +4,15 @@ from flask_cors import CORS
 import google.generativeai as genai
 
 # 既存の駅データ管理用ファイルをインポート
-import stations  # stations.py全体をインポートしてSTATIONSリストにアクセスできるようにします
+import stations
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
 
 # --- Gemini APIの設定 ---
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel("models/gemini-flash-latest")  # 安定版の名前に変更
+# 安定版のモデル名を指定
+model = genai.GenerativeModel("models/gemini-flash-latest")
 
 
 @app.route("/")
@@ -21,33 +22,44 @@ def serve():
 
 @app.route("/api/lines")
 def lines():
+    """路線一覧を返します"""
     return jsonify(stations.ALL_LINES)
 
 
 @app.route("/api/stations")
 def get_stations():
-    line_id = request.args.get("line_id")
+    """駅リストを取得します。line_id があればフィルタリングします"""
+    raw_line_id = request.args.get("line_id")
 
-    if line_id:
-        line_id = line_id.strip()  # 前後の空白を削除
+    # 1. line_id が指定されている場合（ボタン押下時）
+    if raw_line_id:
+        # --- 徹底的な正規化処理 ---
+        # 前後の空白除去、引用符の除去、小文字化を行い、判定ミスを防ぎます
+        line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
+
         data = stations.get_stations_by_line(line_id)
-        # ログを詳細化
-        print(f"--- DEBUG START ---")
-        print(f"Requested Line ID: '{line_id}'")
-        print(f"Result Count: {len(data)}")
-        print(f"--- DEBUG END ---")
+
+        # サーバーログに出力（Renderのログで確認可能）
+        print(f"--- [API DEBUG] ---")
+        print(f"Raw Line ID from Frontend: '{raw_line_id}'")
+        print(f"Cleaned Line ID: '{line_id}'")
+        print(f"Found Stations Count: {len(data)}")
+        print(f"-------------------")
+
         return jsonify(data)
 
+    # 2. line_id が指定されていない場合（アプリ起動時の全駅データ取得）
+    print(f"DEBUG: Returning all {len(stations.STATIONS)} stations.")
     return jsonify(stations.STATIONS)
 
 
 @app.route("/api/gpt-prediction", methods=["POST"])
 def gpt_prediction():
+    """Gemini APIを使用してトイレ情報と励ましメッセージを生成します"""
     data = request.json
     lat = data.get("lat")
     lng = data.get("lng")
     station_name = data.get("station_name", "目的地")
-    is_manual = data.get("is_manual", False)
 
     prompt = f"""
     あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
@@ -83,5 +95,6 @@ def gpt_prediction():
 
 
 if __name__ == "__main__":
+    # Renderなどのホスティング環境では PORT 環境変数を使用
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)

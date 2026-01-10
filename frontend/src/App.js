@@ -2,49 +2,16 @@ import React, { useState, useEffect } from "react";
 import "./App.css";
 
 // 1. 環境設定
-const ODPT_KEY =
-  "3ajj8d8clgnedp3ea1248ccq9iythkds9ipunph5m9dfw13yu5lqq6p1ny8t3b4t";
-const ODPT_BASE_URL = "https://api.odpt.org/api/v4";
 const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
 const LINE_CONFIG = {
-  saikyo: {
-    operator: "JR-East",
-    odptLine: "Saikyo",
-    avgTravel: 15,
-    color: "#00ac9a",
-  },
-  yamanote: {
-    operator: "JR-East",
-    odptLine: "Yamanote",
-    avgTravel: 10,
-    color: "#9acd32",
-  },
-  chuo: {
-    operator: "JR-East",
-    odptLine: "ChuoQuick",
-    avgTravel: 12,
-    color: "#f15a22",
-  },
-  shonan: {
-    operator: "JR-East",
-    odptLine: "ShonanShinjuku",
-    avgTravel: 15,
-    color: "#e21b13",
-  },
-  denentoshi: {
-    operator: "Tokyu",
-    odptLine: "DenEnToshi",
-    avgTravel: 18,
-    color: "#20af3c",
-  },
-  hanzomon: {
-    operator: "TokyoMetro",
-    odptLine: "Hanzomon",
-    avgTravel: 14,
-    color: "#9b7cb6",
-  },
+  saikyo: { color: "#00ac9a" },
+  yamanote: { color: "#9acd32" },
+  chuo: { color: "#f15a22" },
+  shonan: { color: "#e21b13" },
+  denentoshi: { color: "#20af3c" },
+  hanzomon: { color: "#9b7cb6" },
 };
 
 function App() {
@@ -58,46 +25,52 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
-  // --- 修正1: データの取得方法を「一括取得」にシンプル化 ---
+  // 初期読み込み：路線リストと「緊急用」の全駅データを取得
   useEffect(() => {
-    // 1. 路線一覧を取得
+    // 路線一覧を取得
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
       .then(setLines)
       .catch((err) => console.error("路線取得失敗:", err));
 
-    // 2. 全駅データを一括取得（サーバー側の修正済みmain.pyに対応）
-    // 個別にfetchするのではなく、一度の通信で全駅（長津田含む）を取得します
+    // 全駅データを取得（緊急ボタンの距離計算用）
     fetch(`${API_BASE_URL}/api/stations`)
       .then((res) => res.json())
       .then((data) => {
         setAllStations(data);
-        console.log(`✅ 駅データ同期完了: ${data.length}件の駅を認識しました`);
+        console.log(`✅ 全駅データ同期完了: ${data.length}件`);
       })
-      .catch((err) => console.error("駅データ取得失敗:", err));
+      .catch((err) => console.error("全駅データ取得失敗:", err));
   }, []);
 
-  // --- 修正2: ボタンが反応するようにフィルタリングを修正 ---
-  const handleLineClick = (lineId) => {
+  // --- 修正ポイント：ボタンクリック時にAPIから直接その路線の駅を取得する ---
+  const handleLineClick = async (lineId) => {
     console.log("選択された路線ID:", lineId);
-    const filtered = allStations.filter((s) => s.line_id === lineId);
-    if (filtered.length === 0) {
-      alert("駅データがまだ読み込まれていないか、該当する駅がありません。");
+    setIsLoading(true);
+    try {
+      // 指定した路線の駅だけをバックエンドから取得
+      const res = await fetch(`${API_BASE_URL}/api/stations?line_id=${lineId}`);
+      const data = await res.json();
+
+      if (data && data.length > 0) {
+        setSelectedLineStations(data);
+      } else {
+        alert("駅リストが空です。サーバーのデータを確認してください。");
+      }
+    } catch (err) {
+      console.error("駅データ取得エラー:", err);
+      alert("駅データの取得に失敗しました。");
+    } finally {
+      setIsLoading(false);
     }
-    setSelectedLineStations(filtered);
   };
 
-  // --- 修正3: AI予測の呼び出し ---
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
-    setSelectedLineStations([]);
+    setSelectedLineStations([]); // リストを閉じる
 
     try {
-      const config =
-        LINE_CONFIG[targetStation.line_id] || LINE_CONFIG["yamanote"];
-
-      // Gemini API 呼び出し
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,6 +78,7 @@ function App() {
           station_name: targetStation.name,
           lat: targetStation.lat,
           lng: targetStation.lng,
+          line_id: targetStation.line_id, // 路線情報も渡す
           is_manual: isManual,
         }),
       });
@@ -118,14 +92,15 @@ function App() {
       setTimeLeft((gptData.minutes || 10) * 60 * 1000);
     } catch (err) {
       console.error("AI連携失敗:", err);
-      setAiMessage("通信エラー！お尻を締めて駅へ急いで！");
+      setAiMessage("通信エラー！駅の案内図を確認してください。");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleEmergencyClick = () => {
     if (allStations.length === 0) {
-      alert("データ準備中。1〜2秒待ってから再度押してください。");
+      alert("駅データを読み込み中です。数秒待ってからやり直してください。");
       return;
     }
     setIsLoading(true);
@@ -146,19 +121,18 @@ function App() {
         });
 
         if (nearest) {
-          console.log("最寄駅として判定:", nearest.name);
+          console.log("最寄駅判定:", nearest.name);
           startNavigation(nearest, false);
         }
       },
       () => {
-        alert("位置情報の取得に失敗しました。");
+        alert("位置情報の取得に失敗しました。設定を確認してください。");
         setIsLoading(false);
       },
       { enableHighAccuracy: true }
     );
   };
 
-  // 時間フォーマット関数
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
     const m = Math.floor(totalSeconds / 60);
@@ -183,7 +157,9 @@ function App() {
                   <button
                     key={line.id}
                     className="line-btn"
-                    style={{ backgroundColor: line.color }}
+                    style={{
+                      backgroundColor: LINE_CONFIG[line.id]?.color || "#666",
+                    }}
                     onClick={() => handleLineClick(line.id)}
                   >
                     {line.name}
@@ -204,6 +180,7 @@ function App() {
           </>
         )}
 
+        {/* 駅一覧ポップアップ */}
         {selectedLineStations.length > 0 && !timeLeft && (
           <div className="station-list-overlay">
             <div className="station-grid">
@@ -226,6 +203,7 @@ function App() {
           </div>
         )}
 
+        {/* 案内画面 */}
         {timeLeft !== null && (
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>

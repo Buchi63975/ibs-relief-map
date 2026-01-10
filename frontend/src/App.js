@@ -156,21 +156,18 @@ function App() {
               <p className="section-label">路線を選択してトイレを検索</p>
               <div className="line-buttons">
                 {lines.map((line) => {
-                  const cleanId = String(line.id)
-                    .trim()
-                    .toLowerCase()
-                    .replace(/['"]+/g, "");
-                  console.log("render line button:", cleanId, line);
+                  const cleanId = String(line.id).trim().toLowerCase();
                   return (
                     <button
                       key={line.id}
-                      className="line-btn"
+                      id={`line-${cleanId}`}
                       data-line={cleanId}
+                      className="line-btn"
                       style={{
                         backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
                       }}
-                      onClick={(e) => {
-                        console.log("line button clicked:", cleanId, e);
+                      onClick={() => {
+                        console.log("line button clicked:", cleanId);
                         handleLineClick(cleanId);
                       }}
                     >

@@ -50,6 +50,7 @@
   gap: 8px;
   position: relative;
   z-index: 2001;
+  pointer-events: auto !important;
 }
 
 .line-btn {
@@ -61,6 +62,7 @@
   font-size: 0.8rem;
   cursor: pointer;
   transition: opacity 0.2s;
+  pointer-events: auto !important;
 }
 
 .line-btn:active {
@@ -291,4 +293,19 @@
   font-weight: bold;
   width: 100%;
   cursor: pointer;
+}
+
+/* デバッグ: line ボタンの重なり対策 */
+.line-selector {
+  position: relative;
+  z-index: 2000 !important;
+  outline: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.line-buttons {
+  position: relative;
+  z-index: 2001 !important;
+  pointer-events: auto !important;
+}
+.line-btn {
+  pointer-events: auto !important;
 }

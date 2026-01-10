@@ -9,7 +9,6 @@ const ODPT_BASE_URL = "https://api.odpt.org/api/v4";
 const API_BASE_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:5000" : "";
 
-// --- 【更新】路線ごとの詳細設定（田園都市線・半蔵門線を追加） ---
 const LINE_CONFIG = {
   saikyo: {
     operator: "JR-East",
@@ -47,7 +46,7 @@ const LINE_CONFIG = {
     operator: "Tokyu",
     odptLine: "DenEnToshi",
     toilet:
-      "各駅の改札付近に設置されています。渋谷駅は地下1階のA8出口付近が近いです。",
+      "各駅の改札付近に設置されています。長津田駅は中央改札内または西口改札付近にあります。",
     avgTravel: 18,
     color: "#20af3c",
   },
@@ -72,13 +71,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
-  // --- 1. 初期データ読み込み（新しい路線IDを追加） ---
+  // --- 1. 初期データ読み込み（一括取得に修正） ---
   useEffect(() => {
+    // 路線一覧を取得
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
       .then(setLines);
 
-    // 【修正】取得する路線IDに新路線を追加
+    // 全路線の駅データを一括で取得して結合する
     const lineIds = [
       "yamanote",
       "chuo",
@@ -87,13 +87,25 @@ function App() {
       "denentoshi",
       "hanzomon",
     ];
-    lineIds.forEach((id) => {
-      fetch(`${API_BASE_URL}/api/stations?line_id=${id}`)
-        .then((res) => res.json())
-        .then((data) => setAllStations((prev) => [...prev, ...data]));
-    });
+
+    Promise.all(
+      lineIds.map((id) =>
+        fetch(`${API_BASE_URL}/api/stations?line_id=${id}`).then((res) =>
+          res.json()
+        )
+      )
+    )
+      .then((results) => {
+        const mergedStations = results.flat();
+        setAllStations(mergedStations);
+        console.log(
+          `✅ データ読み込み完了: 全${mergedStations.length}駅を登録しました`
+        );
+      })
+      .catch((err) => console.error("駅データの取得に失敗しました:", err));
   }, []);
 
+  // --- 2. カウントダウンタイマー ---
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -102,7 +114,7 @@ function App() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // --- 3. ナビゲーション開始（ODPT API連携） ---
+  // --- 3. ナビゲーション開始 ---
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
@@ -110,61 +122,71 @@ function App() {
 
     try {
       const lineKey = targetStation.line_id;
-      // LINE_CONFIGから設定を取得（会社名と路線名）
       const config = LINE_CONFIG[lineKey] || LINE_CONFIG["yamanote"];
-
       const stationNameEn = targetStation.name_en || "Shibuya";
 
-      // 【重要】鉄道会社(config.operator)と路線名(config.odptLine)を動的に組み込む
+      // 公共交通オープンデータから時刻表を取得
       const odptStationId = `odpt.Station:${config.operator}.${config.odptLine}.${stationNameEn}`;
-
       const timetableUrl = `${ODPT_BASE_URL}/odpt:StationTimetable?odpt:station=${odptStationId}&acl:consumerKey=${ODPT_KEY}`;
-      const ttRes = await fetch(timetableUrl);
-      const ttData = await ttRes.json();
 
-      const now = new Date();
-      const currentMin = now.getHours() * 60 + now.getMinutes();
-      let waitMinutes = 5;
+      let waitMinutes = 5; // デフォルト待ち時間
 
-      if (ttData && ttData.length > 0) {
-        const dayType =
-          now.getDay() === 0 || now.getDay() === 6
-            ? "odpt.Calendar:SaturdayHoliday"
-            : "odpt.Calendar:Weekday";
+      try {
+        const ttRes = await fetch(timetableUrl);
+        const ttData = await ttRes.json();
+        const now = new Date();
+        const currentMin = now.getHours() * 60 + now.getMinutes();
 
-        const timetable =
-          ttData.find((t) => t["odpt:calendar"] === dayType) || ttData[0];
+        if (ttData && ttData.length > 0) {
+          const dayType =
+            now.getDay() === 0 || now.getDay() === 6
+              ? "odpt.Calendar:SaturdayHoliday"
+              : "odpt.Calendar:Weekday";
 
-        const nextTrain = timetable["odpt:stationTimetableObject"].find(
-          (obj) => {
-            const [h, m] = obj["odpt:departureTime"].split(":").map(Number);
-            return h * 60 + m > currentMin;
+          const timetable =
+            ttData.find((t) => t["odpt:calendar"] === dayType) || ttData[0];
+          const nextTrain = timetable["odpt:stationTimetableObject"].find(
+            (obj) => {
+              const [h, m] = obj["odpt:departureTime"].split(":").map(Number);
+              return h * 60 + m > currentMin;
+            }
+          );
+
+          if (nextTrain) {
+            const [nh, nm] = nextTrain["odpt:departureTime"]
+              .split(":")
+              .map(Number);
+            waitMinutes = nh * 60 + nm - currentMin;
           }
-        );
-        if (nextTrain) {
-          const [nh, nm] = nextTrain["odpt:departureTime"]
-            .split(":")
-            .map(Number);
-          waitMinutes = nh * 60 + nm - currentMin;
         }
+      } catch (e) {
+        console.warn(
+          "時刻表が取得できませんでした。デフォルト値を使用します。"
+        );
       }
 
       const totalPrediction = waitMinutes + config.avgTravel;
 
+      // Gemini AI予測
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ station_name: targetStation.name }),
+        body: JSON.stringify({
+          station_name: targetStation.name,
+          lat: targetStation.lat,
+          lng: targetStation.lng,
+          is_manual: isManual,
+        }),
       });
       const gptData = await gptRes.json();
 
       setAiMessage(gptData.message);
       setRouteSteps([
-        `今から ${waitMinutes} 分後の電車に乗車予定です`,
+        `今から約 ${waitMinutes} 分後の電車に乗車予定です`,
         `電車で約 ${config.avgTravel} 分移動します`,
         `目的地の ${targetStation.name} 駅ホームに到着`,
       ]);
-      setToiletInfo(config.toilet);
+      setToiletInfo(gptData.toilet_info || config.toilet);
       setTimeLeft(totalPrediction * 60 * 1000);
     } catch (err) {
       console.error("Navigation Error:", err);
@@ -179,24 +201,43 @@ function App() {
     setSelectedLineStations(filtered);
   };
 
+  // --- 4. 緊急ボタン（最寄駅検索ロジック修正） ---
   const handleEmergencyClick = () => {
-    if (allStations.length === 0) return;
+    if (allStations.length === 0) {
+      alert("駅データを読み込み中です。数秒待ってから再度押してください。");
+      return;
+    }
     setIsLoading(true);
-    navigator.geolocation.getCurrentPosition((pos) => {
-      const { latitude, longitude } = pos.coords;
-      let minDistance = Infinity;
-      let nearest = null;
-      allStations.forEach((s) => {
-        const d = Math.sqrt(
-          Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
-        );
-        if (d < minDistance) {
-          minDistance = d;
-          nearest = s;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        console.log("あなたの現在地:", latitude, longitude);
+
+        let minDistance = Infinity;
+        let nearest = null;
+
+        allStations.forEach((s) => {
+          // 直線距離の近似計算
+          const d = Math.sqrt(
+            Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
+          );
+          if (d < minDistance) {
+            minDistance = d;
+            nearest = s;
+          }
+        });
+
+        if (nearest) {
+          console.log("最寄駅判定結果:", nearest.name);
+          startNavigation(nearest, false);
         }
-      });
-      if (nearest) startNavigation(nearest, false);
-    });
+      },
+      (err) => {
+        alert("位置情報の取得に失敗しました。設定を確認してください。");
+        setIsLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const formatTime = (ms) => {
@@ -234,7 +275,7 @@ function App() {
               <div className="station-grid">
                 {selectedLineStations.map((s) => (
                   <button
-                    key={s.id}
+                    key={`${s.line_id}-${s.id}`}
                     className="station-select-btn"
                     onClick={() => startNavigation(s, true)}
                   >
@@ -278,9 +319,7 @@ function App() {
               ))}
             </div>
             <div className="toilet-location-box">
-              <span className="location-label">
-                📍 おすすめ乗車位置とトイレ
-              </span>
+              <span className="location-label">📍 AIによるトイレ位置詳細</span>
               <p className="location-text">{toiletInfo}</p>
             </div>
             <div className="ai-bubble">

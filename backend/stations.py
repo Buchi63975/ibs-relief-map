@@ -1,4 +1,3 @@
-# stations.py の冒頭をこれに差し替えてください
 ALL_LINES = [
     {"id": "yamanote", "name": "山手線", "color": "#008000"},
     {"id": "chuo", "name": "中央線(快速)", "color": "#ff8c00"},

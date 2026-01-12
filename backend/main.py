@@ -43,35 +43,45 @@ def get_stations():
     line_id = raw_line_id.strip().replace('"', "").replace("'", "").lower()
 
     if line_id in LINE_MAP and ODPT_API_KEY:
-        try:
-            # 最新の公式エンドポイントを使用
-            url = f"https://api.odpt.org/api/v4/odpt:Station?odpt:line=${LINE_MAP[line_id]}&acl:consumerKey=${ODPT_API_KEY}"
-            params = {"odpt:line": LINE_MAP[line_id], "acl:consumerKey": ODPT_API_KEY}
-            response = requests.get(url, params=params, timeout=5)
+        url = "https://api.odpt.org/api/v4/odpt:Station"
+        params = {"odpt:line": LINE_MAP[line_id], "acl:consumerKey": ODPT_API_KEY}
 
-            # ステータスコードが200以外なら例外を投げる
-            response.raise_for_status()
-            api_data = response.json()
+        # タイムアウトと簡易リトライ設定
+        timeout_seconds = 10
+        max_attempts = 2
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = requests.get(url, params=params, timeout=timeout_seconds)
+                response.raise_for_status()
+                api_data = response.json()
 
-            if api_data:
-                formatted_stations = []
-                for s in api_data:
-                    formatted_stations.append(
-                        {
-                            "id": s.get("owl:sameAs"),
-                            "name": s.get("dc:title", "不明な駅"),
-                            "line_id": line_id,
-                            "lat": s.get("geo:lat"),
-                            "lng": s.get("geo:long"),
-                        }
-                    )
-                formatted_stations.sort(key=lambda x: x["name"])
-                return jsonify(formatted_stations)
+                if api_data:
+                    formatted_stations = []
+                    for s in api_data:
+                        formatted_stations.append(
+                            {
+                                "id": s.get("owl:sameAs"),
+                                "name": s.get("dc:title", "不明な駅"),
+                                "line_id": line_id,
+                                "lat": s.get("geo:lat"),
+                                "lng": s.get("geo:long"),
+                            }
+                        )
+                    formatted_stations.sort(key=lambda x: x["name"])
+                    return jsonify(formatted_stations)
 
-        except Exception as e:
-            print(f"⚠️ API Error for {line_id}: {e}")
+                # 空レスポンスならリトライの対象にする
+                if attempt < max_attempts:
+                    continue
+                break
 
-    # APIが失敗した場合のみ、ローカルのデータ（stations.py）を返す
+            except requests.RequestException as e:
+                print(f"⚠️ ODPT request attempt {attempt} for {line_id} failed: {e}")
+                if attempt < max_attempts:
+                    continue
+                # 最終的に失敗したらローカルデータへフォールバック
+                break
+
     return jsonify(stations.get_stations_by_line(line_id))
 
 

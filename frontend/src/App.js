@@ -106,33 +106,77 @@ function App() {
     }
   };
 
+  // helper: 緯度経度から距離(m)を返す
+  const haversineMeters = (lat1, lon1, lat2, lon2) => {
+    const R = 6371000;
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const handleEmergencyClick = () => {
     if (allStations.length === 0) {
       alert("駅データを読み込み中です。");
       return;
     }
+
     setIsLoading(true);
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude } = pos.coords;
+        const { latitude, longitude, accuracy } = pos.coords;
+        console.log("📍 取得した現在地:", { latitude, longitude, accuracy });
+
+        // 精度が低い場合はユーザーに通知（閾値は環境に合わせて調整）
+        if (typeof accuracy === "number" && accuracy > 200) {
+          console.warn(`位置精度が低い: 約 ${Math.round(accuracy)} m`);
+          if (
+            !confirm(
+              `現在の位置情報の精度が低いです（約${Math.round(
+                accuracy
+              )}m）。続行しますか？`
+            )
+          ) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
         let minDistance = Infinity;
         let nearest = null;
+
         allStations.forEach((s) => {
-          const d = Math.sqrt(
-            Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
-          );
+          const lat = Number(s.lat);
+          const lng = Number(s.lng);
+          const d = haversineMeters(latitude, longitude, lat, lng);
+          // デバッグログ：各駅までの距離（m）
+          console.log(`距離: ${s.name} => ${Math.round(d)} m`);
           if (d < minDistance) {
             minDistance = d;
             nearest = s;
           }
         });
+
+        console.log(
+          "🔎 最寄り駅候補:",
+          nearest ? `${nearest.name} (${Math.round(minDistance)} m)` : null
+        );
         if (nearest) startNavigation(nearest, false);
-      },
-      () => {
-        alert("位置情報の取得に失敗しました。");
         setIsLoading(false);
       },
-      { enableHighAccuracy: true }
+      (err) => {
+        console.error("位置情報取得エラー:", err);
+        alert(
+          "位置情報の取得に失敗しました。ブラウザの位置情報許可を確認してください。"
+        );
+        setIsLoading(false);
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
   };
 

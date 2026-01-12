@@ -2,7 +2,7 @@ import os
 import requests  # 外部API取得用に追加
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import google.genai as genai
+import google.generativeai as genai
 import stations
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")

@@ -6,13 +6,14 @@
   flex-direction: column;
   align-items: center;
   color: #ffffff;
-  font-family: sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .App-header {
   width: 100%;
   max-width: 480px;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .title {
@@ -21,76 +22,44 @@
   margin-bottom: 20px;
 }
 
-/* 路線選択 */
+/* 路線選択エリア */
 .line-selector {
   background: rgba(255, 255, 255, 0.05);
   padding: 20px;
   border-radius: 15px;
   margin-bottom: 20px;
-  position: relative;
-  z-index: 1;
-}
-
-.section-label {
-  margin-bottom: 15px;
-  font-size: 1rem;
-  color: #ffffff;
 }
 
 .line-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
 .line-btn {
-  padding: 12px 15px;
-  border-radius: 8px;
+  padding: 15px 10px;
+  border-radius: 10px;
   border: none;
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: transform 0.2s, opacity 0.2s;
-}
-
-.line-btn:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
+  transition: transform 0.1s;
 }
 
 .line-btn:active {
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
-/* --- 駅リストコンテナ（画面全体を覆う） --- */
-.station-container {
-  background-color: #121213;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100;
-  overflow-y: auto;
-  margin: 0;
-  padding: 0;
-}
-
-/* タイトルとグリッドのための内側コンテナ */
-.station-container-inner {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 20px;
-  min-height: 100vh;
-  box-sizing: border-box;
+/* 駅選択画面 */
+.station-view-container {
+  width: 100%;
+  animation: fadeIn 0.3s ease-in;
 }
 
 .station-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  margin-top: 15px;
   margin-bottom: 20px;
 }
 
@@ -98,168 +67,70 @@
   background: #3a3a3c;
   color: white;
   border: none;
-  padding: 15px 5px;
-  border-radius: 10px;
-  font-size: 0.8rem;
+  padding: 18px 5px;
+  border-radius: 12px;
+  font-size: 0.9rem;
   font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s;
-}
-
-.station-select-btn:hover {
-  background: #4a4a4c;
-  transform: scale(1.05);
-}
-
-.station-select-btn:active {
-  transform: scale(0.98);
-}
-
-.close-list-btn {
-  width: 100%;
-  padding: 12px;
-  background: #444;
-  color: white;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-.close-list-btn:hover {
-  background: #555;
-}
-
-.close-list-btn:active {
-  background: #333;
-}
-
-/* 緊急ボタン */
-.emergency-section {
-  position: relative;
-  z-index: 1;
-}
-
-.big-emergency-btn {
-  background: linear-gradient(145deg, #ff4b4b, #e60000);
-  color: white;
-  padding: 25px;
-  border-radius: 20px;
-  width: 100%;
-  font-size: 1.2rem;
-  font-weight: 900;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 15px rgba(255, 75, 75, 0.3);
-}
-
-.big-emergency-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 75, 75, 0.4);
-}
-
-.big-emergency-btn:active {
-  transform: translateY(0);
-}
-
-.big-emergency-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 /* タイマーカード */
 .countdown-card {
   background: white;
   color: #1a1a1b;
-  padding: 20px;
+  padding: 25px;
   border-radius: 24px;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.target-station {
-  font-size: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 15px;
-  color: #1a1a1b;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .timer-display {
-  font-size: 3rem;
+  font-size: 3.5rem;
   color: #ff4b4b;
-  font-weight: bold;
-  margin: 20px 0;
-  font-family: "Courier New", monospace;
-}
-
-.route-guide {
-  background: #f5f5f5;
-  padding: 15px;
-  border-radius: 12px;
-  margin: 20px 0;
-  text-align: left;
-}
-
-.guide-title {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #1a1a1b;
-}
-
-.step-item {
-  margin: 8px 0;
-}
-
-.step-text {
-  color: #333;
-  line-height: 1.5;
-  margin: 5px 0;
+  font-weight: 900;
+  margin: 10px 0;
 }
 
 .toilet-location-box {
   background: #e8f4f8;
   padding: 15px;
   border-radius: 12px;
-  margin: 20px 0;
+  margin: 15px 0;
   text-align: left;
 }
 
 .location-label {
-  display: block;
   font-weight: bold;
-  margin-bottom: 8px;
-  color: #1a1a1b;
+  color: #0077b6;
 }
 
-.location-text {
-  color: #333;
-  line-height: 1.5;
-  margin: 0;
-}
-
-.reset-btn {
+.big-emergency-btn {
+  background: linear-gradient(145deg, #ff4b4b, #e60000);
+  color: white;
+  padding: 20px;
+  border-radius: 15px;
   width: 100%;
-  padding: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border: none;
+  margin-top: 10px;
+}
+
+.reset-btn,
+.close-list-btn {
+  width: 100%;
+  padding: 15px;
   background: #666;
   color: white;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
-  cursor: pointer;
-  font-size: 1rem;
   font-weight: bold;
   margin-top: 10px;
-  transition: background 0.2s;
 }
 
-.reset-btn:hover {
-  background: #777;
-}
-
-.reset-btn:active {
-  background: #555;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

@@ -152,24 +152,26 @@ function App() {
         ) : selectedLineStations.length > 0 ? (
           /* 2. 駅名リスト表示（ここが表示されている間、3番は消える） */
           <div className="station-container">
-            <h2 className="section-label">駅を選択</h2>
-            <div className="station-grid">
-              {selectedLineStations.map((s) => (
-                <button
-                  key={`${s.line_id}-${s.id}`}
-                  className="station-select-btn"
-                  onClick={() => startNavigation(s, true)}
-                >
-                  {s.name}
-                </button>
-              ))}
+            <div className="station-container-inner">
+              <h2 className="section-label">駅を選択</h2>
+              <div className="station-grid">
+                {selectedLineStations.map((s) => (
+                  <button
+                    key={`${s.line_id}-${s.id}`}
+                    className="station-select-btn"
+                    onClick={() => startNavigation(s, true)}
+                  >
+                    {s.name}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="close-list-btn"
+                onClick={() => setSelectedLineStations([])}
+              >
+                戻る
+              </button>
             </div>
-            <button
-              className="close-list-btn"
-              onClick={() => setSelectedLineStations([])}
-            >
-              戻る
-            </button>
           </div>
         ) : (
           /* 3. 初期画面（路線選択） */

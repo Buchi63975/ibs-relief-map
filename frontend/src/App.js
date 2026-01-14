@@ -24,6 +24,14 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [arrivalStation, setArrivalStation] = useState("");
 
+  // デバッグ: 状態が変わるたびにコンソールに出力
+  useEffect(() => {
+    console.log("=== 状態変更 ===");
+    console.log("selectedLineStations:", selectedLineStations);
+    console.log("selectedLineStations.length:", selectedLineStations.length);
+    console.log("timeLeft:", timeLeft);
+  }, [selectedLineStations, timeLeft]);
+
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
@@ -41,15 +49,19 @@ function App() {
       .trim()
       .toLowerCase()
       .replace(/['"]+/g, "");
+    console.log("路線クリック:", cleanLineId);
     setIsLoading(true);
     try {
       const res = await fetch(
         `${API_BASE_URL}/api/stations?line_id=${cleanLineId}`
       );
       const data = await res.json();
+      console.log("取得した駅データ:", data);
+      console.log("駅データの件数:", data.length);
       setSelectedLineStations(data || []);
     } catch (err) {
       console.error("駅取得失敗:", err);
+      setSelectedLineStations([]);
     } finally {
       setIsLoading(false);
     }
@@ -117,14 +129,49 @@ function App() {
       .padStart(2, "0")}`;
   };
 
+  // 表示するコンポーネントを決定
+  const showTimer = timeLeft !== null;
+  const showStationList = timeLeft === null && selectedLineStations.length > 0;
+  const showLineSelector =
+    timeLeft === null && selectedLineStations.length === 0;
+
+  console.log("レンダリング判定:", {
+    showTimer,
+    showStationList,
+    showLineSelector,
+  });
+
   return (
     <div className="App">
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
 
-        {/* --- 表示の切り替えロジック --- */}
-        {timeLeft !== null ? (
-          /* 1. タイマー画面 */
+        {/* デバッグ表示（開発中のみ） */}
+        {process.env.NODE_ENV === "development" && (
+          <div
+            style={{
+              background: "rgba(255,0,0,0.2)",
+              padding: "10px",
+              marginBottom: "10px",
+              fontSize: "12px",
+              textAlign: "left",
+            }}
+          >
+            <div>駅リスト件数: {selectedLineStations.length}</div>
+            <div>タイマー: {timeLeft !== null ? "表示中" : "非表示"}</div>
+            <div>
+              表示中:{" "}
+              {showTimer
+                ? "タイマー"
+                : showStationList
+                ? "駅リスト"
+                : "路線選択"}
+            </div>
+          </div>
+        )}
+
+        {/* 1. タイマー画面 */}
+        {showTimer && (
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>
             <div className="timer-display">{formatTime(timeLeft)}</div>
@@ -149,8 +196,10 @@ function App() {
               完了・戻る
             </button>
           </div>
-        ) : selectedLineStations.length > 0 ? (
-          /* 2. 駅名リスト表示（ここが表示されている間、3番は消える） */
+        )}
+
+        {/* 2. 駅名リスト表示 */}
+        {showStationList && (
           <div className="station-container">
             <div className="station-container-inner">
               <h2 className="section-label">駅を選択</h2>
@@ -167,14 +216,19 @@ function App() {
               </div>
               <button
                 className="close-list-btn"
-                onClick={() => setSelectedLineStations([])}
+                onClick={() => {
+                  console.log("戻るボタンクリック");
+                  setSelectedLineStations([]);
+                }}
               >
                 戻る
               </button>
             </div>
           </div>
-        ) : (
-          /* 3. 初期画面（路線選択） */
+        )}
+
+        {/* 3. 初期画面（路線選択） */}
+        {showLineSelector && (
           <>
             <div className="line-selector">
               <p className="section-label">路線を選択してトイレを検索</p>

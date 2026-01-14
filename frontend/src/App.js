@@ -27,10 +27,7 @@ function App() {
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/lines`)
       .then((res) => res.json())
-      .then((data) => {
-        setLines(data);
-        console.log("✅ 取得した路線一覧:", data);
-      })
+      .then((data) => setLines(data))
       .catch((err) => console.error("路線取得失敗:", err));
 
     fetch(`${API_BASE_URL}/api/stations`)
@@ -40,13 +37,10 @@ function App() {
   }, []);
 
   const handleLineClick = async (lineId) => {
-    // 徹底的に掃除。引用符が含まれている可能性を排除
     const cleanLineId = String(lineId)
       .trim()
       .toLowerCase()
       .replace(/['"]+/g, "");
-    console.log(`🔍 リクエスト送信開始: ID="${cleanLineId}"`);
-
     setIsLoading(true);
     setSelectedLineStations([]);
 
@@ -55,27 +49,19 @@ function App() {
         `${API_BASE_URL}/api/stations?line_id=${cleanLineId}`
       );
       if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-
       const data = await res.json();
-      console.log(`📡 受信データ:`, data);
-
       if (data && data.length > 0) {
         setSelectedLineStations(data);
       } else {
-        // 画面にエラーを出して原因を可視化する
-        alert(
-          `路線「${cleanLineId}」の駅データが0件でした。サーバー側のstations.py内のline_idを確認してください。`
-        );
+        alert(`路線「${cleanLineId}」の駅データが見つかりませんでした。`);
       }
     } catch (err) {
       console.error("駅データ取得エラー:", err);
-      alert("通信エラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- StartNavigation, HandleEmergencyClick, FormatTime は以前と同じ ---
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
@@ -106,7 +92,6 @@ function App() {
     }
   };
 
-  // helper: 緯度経度から距離(m)を返す
   const haversineMeters = (lat1, lon1, lat2, lon2) => {
     const R = 6371000;
     const toRad = (d) => (d * Math.PI) / 180;
@@ -120,89 +105,31 @@ function App() {
   };
 
   const handleEmergencyClick = () => {
-    if (allStations.length === 0) {
-      alert("駅データを読み込み中です。");
-      return;
-    }
-
+    if (allStations.length === 0) return;
     setIsLoading(true);
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        console.log("📍 取得した現在地:", { latitude, longitude, accuracy });
-
-        if (!isFinite(latitude) || !isFinite(longitude)) {
-          console.error("位置情報が不正です:", pos.coords);
-          alert("位置情報が不正です。ブラウザの設定を確認してください。");
-          setIsLoading(false);
-          return;
-        }
-
-        // 精度閾値（m）
-        const ACCURACY_THRESHOLD = 200;
-        if (typeof accuracy === "number" && accuracy > ACCURACY_THRESHOLD) {
-          console.warn(`位置精度が低い: 約 ${Math.round(accuracy)} m`);
-          if (
-            !confirm(
-              `現在の位置情報の精度が低いです（約${Math.round(
-                accuracy
-              )}m）。続行しますか？`
-            )
-          ) {
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // 有効な緯度経度を持つ駅だけを対象にする
+        const { latitude, longitude } = pos.coords;
         const validStations = allStations.filter(
           (s) => isFinite(Number(s.lat)) && isFinite(Number(s.lng))
         );
-        if (validStations.length === 0) {
-          console.error("有効な駅データがありません。");
-          alert("駅データが不正です。");
-          setIsLoading(false);
-          return;
-        }
-
-        // 各駅までの距離を計算してログ出力（上位5件も表示）
-        const distances = validStations.map((s) => {
-          const lat = Number(s.lat);
-          const lng = Number(s.lng);
-          const d = haversineMeters(latitude, longitude, lat, lng);
-          return { station: s, distance: d };
-        });
-
+        const distances = validStations.map((s) => ({
+          station: s,
+          distance: haversineMeters(
+            latitude,
+            longitude,
+            Number(s.lat),
+            Number(s.lng)
+          ),
+        }));
         distances.sort((a, b) => a.distance - b.distance);
-        console.log(
-          "🔎 上位5最寄り候補:",
-          distances.slice(0, 5).map((d) => ({
-            name: d.station.name,
-            line: d.station.line_id,
-            meters: Math.round(d.distance),
-          }))
-        );
-
-        const nearest = distances[0] ? distances[0].station : null;
-        const nearestDist = distances[0] ? distances[0].distance : null;
-
-        console.log(
-          "🔎 最寄り駅決定:",
-          nearest ? `${nearest.name} (${Math.round(nearestDist)} m)` : null
-        );
-
-        if (nearest) startNavigation(nearest, false);
+        if (distances[0]) startNavigation(distances[0].station, false);
         setIsLoading(false);
       },
-      (err) => {
-        console.error("位置情報取得エラー:", err);
-        alert(
-          "位置情報の取得に失敗しました。ブラウザの位置情報許可を確認してください。"
-        );
+      () => {
+        alert("位置情報の取得に失敗しました。");
         setIsLoading(false);
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      }
     );
   };
 
@@ -220,7 +147,9 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
-        {!timeLeft && (
+
+        {/* 修正点：駅一覧もタイマーも出ていない時だけ路線選択を表示 */}
+        {!timeLeft && selectedLineStations.length === 0 && (
           <>
             <div className="line-selector">
               <p className="section-label">路線を選択してトイレを検索</p>
@@ -230,16 +159,11 @@ function App() {
                   return (
                     <button
                       key={line.id}
-                      id={`line-${cleanId}`}
-                      data-line={cleanId}
                       className="line-btn"
                       style={{
                         backgroundColor: LINE_CONFIG[cleanId]?.color || "#666",
                       }}
-                      onClick={() => {
-                        console.log("line button clicked:", cleanId);
-                        handleLineClick(cleanId);
-                      }}
+                      onClick={() => handleLineClick(cleanId)}
                     >
                       {line.name}
                     </button>
@@ -253,16 +177,16 @@ function App() {
                 onClick={handleEmergencyClick}
                 disabled={isLoading}
               >
-                {isLoading && !selectedLineStations.length
-                  ? "解析中..."
-                  : "🚨 最寄りのトイレへ直行"}
+                {isLoading ? "解析中..." : "🚨 最寄りのトイレへ直行"}
               </button>
             </div>
           </>
         )}
 
+        {/* 駅一覧ポップアップ（モーダル形式） */}
         {selectedLineStations.length > 0 && !timeLeft && (
           <div className="station-list-overlay">
+            <h2 className="overlay-title">駅を選択</h2>
             <div className="station-grid">
               {selectedLineStations.map((s) => (
                 <button
@@ -283,6 +207,7 @@ function App() {
           </div>
         )}
 
+        {/* 案内画面 */}
         {timeLeft !== null && (
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>

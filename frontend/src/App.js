@@ -132,8 +132,16 @@ function App() {
         const { latitude, longitude, accuracy } = pos.coords;
         console.log("📍 取得した現在地:", { latitude, longitude, accuracy });
 
-        // 精度が低い場合はユーザーに通知（閾値は環境に合わせて調整）
-        if (typeof accuracy === "number" && accuracy > 200) {
+        if (!isFinite(latitude) || !isFinite(longitude)) {
+          console.error("位置情報が不正です:", pos.coords);
+          alert("位置情報が不正です。ブラウザの設定を確認してください。");
+          setIsLoading(false);
+          return;
+        }
+
+        // 精度閾値（m）
+        const ACCURACY_THRESHOLD = 200;
+        if (typeof accuracy === "number" && accuracy > ACCURACY_THRESHOLD) {
           console.warn(`位置精度が低い: 約 ${Math.round(accuracy)} m`);
           if (
             !confirm(
@@ -147,25 +155,43 @@ function App() {
           }
         }
 
-        let minDistance = Infinity;
-        let nearest = null;
+        // 有効な緯度経度を持つ駅だけを対象にする
+        const validStations = allStations.filter(
+          (s) => isFinite(Number(s.lat)) && isFinite(Number(s.lng))
+        );
+        if (validStations.length === 0) {
+          console.error("有効な駅データがありません。");
+          alert("駅データが不正です。");
+          setIsLoading(false);
+          return;
+        }
 
-        allStations.forEach((s) => {
+        // 各駅までの距離を計算してログ出力（上位5件も表示）
+        const distances = validStations.map((s) => {
           const lat = Number(s.lat);
           const lng = Number(s.lng);
           const d = haversineMeters(latitude, longitude, lat, lng);
-          // デバッグログ：各駅までの距離（m）
-          console.log(`距離: ${s.name} => ${Math.round(d)} m`);
-          if (d < minDistance) {
-            minDistance = d;
-            nearest = s;
-          }
+          return { station: s, distance: d };
         });
 
+        distances.sort((a, b) => a.distance - b.distance);
         console.log(
-          "🔎 最寄り駅候補:",
-          nearest ? `${nearest.name} (${Math.round(minDistance)} m)` : null
+          "🔎 上位5最寄り候補:",
+          distances.slice(0, 5).map((d) => ({
+            name: d.station.name,
+            line: d.station.line_id,
+            meters: Math.round(d.distance),
+          }))
         );
+
+        const nearest = distances[0] ? distances[0].station : null;
+        const nearestDist = distances[0] ? distances[0].distance : null;
+
+        console.log(
+          "🔎 最寄り駅決定:",
+          nearest ? `${nearest.name} (${Math.round(nearestDist)} m)` : null
+        );
+
         if (nearest) startNavigation(nearest, false);
         setIsLoading(false);
       },

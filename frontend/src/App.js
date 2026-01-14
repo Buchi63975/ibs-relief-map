@@ -49,7 +49,7 @@ function App() {
       const data = await res.json();
       setSelectedLineStations(data || []);
     } catch (err) {
-      console.error("駅データ取得エラー:", err);
+      console.error("駅取得失敗:", err);
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +58,7 @@ function App() {
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
-    setSelectedLineStations([]); // ここでリストを空にして確実に消す
+    setSelectedLineStations([]); // 案内開始時に駅リストを閉じる
     try {
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
@@ -79,10 +79,32 @@ function App() {
       );
       setTimeLeft((gptData.minutes || 10) * 60 * 1000);
     } catch (err) {
-      setAiMessage("通信エラー！");
+      setAiMessage("案内情報の取得に失敗しました。");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEmergencyClick = () => {
+    if (allStations.length === 0) return;
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const nearest = allStations.sort((a, b) => {
+          const distA =
+            Math.pow(a.lat - latitude, 2) + Math.pow(a.lng - longitude, 2);
+          const distB =
+            Math.pow(b.lat - latitude, 2) + Math.pow(b.lng - longitude, 2);
+          return distA - distB;
+        })[0];
+        if (nearest) startNavigation(nearest, false);
+      },
+      () => {
+        alert("位置情報が取得できません。");
+        setIsLoading(false);
+      }
+    );
   };
 
   const formatTime = (ms) => {
@@ -95,36 +117,63 @@ function App() {
       .padStart(2, "0")}`;
   };
 
-  const handleEmergencyClick = () => {
-    if (allStations.length === 0) return;
-    setIsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        // 近似計算で最寄り駅を探すロジック（省略せず動作するようにしています）
-        const nearest = allStations.sort((a, b) => {
-          const distA =
-            Math.pow(a.lat - latitude, 2) + Math.pow(a.lng - longitude, 2);
-          const distB =
-            Math.pow(b.lat - latitude, 2) + Math.pow(b.lng - longitude, 2);
-          return distA - distB;
-        })[0];
-        if (nearest) startNavigation(nearest, false);
-      },
-      () => {
-        alert("位置情報が取得できませんでした。");
-        setIsLoading(false);
-      }
-    );
-  };
-
   return (
     <div className="App">
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
 
-        {/* 【最重要修正箇所】selectedLineStations.length === 0 の時だけ表示 */}
-        {!timeLeft && selectedLineStations.length === 0 && (
+        {/* --- 条件分岐の徹底：どれか1つの画面のみ表示される --- */}
+        {timeLeft !== null ? (
+          /* 1. タイマー・案内画面 */
+          <div className="countdown-card">
+            <h2 className="target-station">{arrivalStation} のトイレまで</h2>
+            <div className="timer-display">{formatTime(timeLeft)}</div>
+            <div className="route-guide">
+              <span className="guide-title">🏁 到着までの手順</span>
+              {routeSteps.map((step, i) => (
+                <div key={i} className="step-item">
+                  <p className="step-text">{step}</p>
+                </div>
+              ))}
+            </div>
+            <div className="toilet-location-box">
+              <span className="location-label">📍 AIによるトイレ位置詳細</span>
+              <p className="location-text">{toiletInfo}</p>
+            </div>
+            <button
+              className="reset-btn"
+              onClick={() => {
+                setTimeLeft(null);
+                setSelectedLineStations([]);
+              }}
+            >
+              完了・戻る
+            </button>
+          </div>
+        ) : selectedLineStations.length > 0 ? (
+          /* 2. 駅一覧画面 */
+          <div className="station-list-overlay">
+            <h2 className="overlay-label">駅を選択してください</h2>
+            <div className="station-grid">
+              {selectedLineStations.map((s) => (
+                <button
+                  key={`${s.line_id}-${s.id}`}
+                  className="station-select-btn"
+                  onClick={() => startNavigation(s, true)}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+            <button
+              className="close-list-btn"
+              onClick={() => setSelectedLineStations([])}
+            >
+              戻る
+            </button>
+          </div>
+        ) : (
+          /* 3. 初期画面（路線選択） */
           <>
             <div className="line-selector">
               <p className="section-label">路線を選択してトイレを検索</p>
@@ -156,59 +205,6 @@ function App() {
               </button>
             </div>
           </>
-        )}
-
-        {/* 駅一覧ポップアップ */}
-        {selectedLineStations.length > 0 && !timeLeft && (
-          <div className="station-list-overlay">
-            <h2 className="overlay-label">駅を選択</h2>
-            <div className="station-grid">
-              {selectedLineStations.map((s) => (
-                <button
-                  key={`${s.line_id}-${s.id}`}
-                  className="station-select-btn"
-                  onClick={() => startNavigation(s, true)}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-            <button
-              className="close-list-btn"
-              onClick={() => setSelectedLineStations([])}
-            >
-              閉じる
-            </button>
-          </div>
-        )}
-
-        {/* 案内画面 */}
-        {timeLeft !== null && (
-          <div className="countdown-card">
-            <h2 className="target-station">{arrivalStation} のトイレまで</h2>
-            <div className="timer-display">{formatTime(timeLeft)}</div>
-            <div className="route-guide">
-              <span className="guide-title">🏁 到着までの手順</span>
-              {routeSteps.map((step, i) => (
-                <div key={i} className="step-item">
-                  <p className="step-text">{step}</p>
-                </div>
-              ))}
-            </div>
-            <div className="toilet-location-box">
-              <span className="location-label">📍 AIによるトイレ位置詳細</span>
-              <p className="location-text">{toiletInfo}</p>
-            </div>
-            <button
-              className="reset-btn"
-              onClick={() => {
-                setTimeLeft(null);
-                setRouteSteps([]);
-              }}
-            >
-              完了・戻る
-            </button>
-          </div>
         )}
       </header>
     </div>

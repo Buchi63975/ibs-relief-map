@@ -58,7 +58,7 @@ function App() {
   const startNavigation = async (targetStation, isManual = false) => {
     setIsLoading(true);
     setArrivalStation(targetStation.name);
-    setSelectedLineStations([]); // 案内開始時に駅リストを閉じる
+    setSelectedLineStations([]);
     try {
       const gptRes = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
@@ -79,7 +79,7 @@ function App() {
       );
       setTimeLeft((gptData.minutes || 10) * 60 * 1000);
     } catch (err) {
-      setAiMessage("案内情報の取得に失敗しました。");
+      setAiMessage("通信エラーが発生しました。");
     } finally {
       setIsLoading(false);
     }
@@ -122,9 +122,9 @@ function App() {
       <header className="App-header">
         <h1 className="title">IBS Relief Map AI</h1>
 
-        {/* --- 条件分岐の徹底：どれか1つの画面のみ表示される --- */}
+        {/* --- 表示の切り替えロジック --- */}
         {timeLeft !== null ? (
-          /* 1. タイマー・案内画面 */
+          /* 1. タイマー画面 */
           <div className="countdown-card">
             <h2 className="target-station">{arrivalStation} のトイレまで</h2>
             <div className="timer-display">{formatTime(timeLeft)}</div>
@@ -137,23 +137,22 @@ function App() {
               ))}
             </div>
             <div className="toilet-location-box">
-              <span className="location-label">📍 AIによるトイレ位置詳細</span>
+              <span className="location-label">📍 トイレ位置詳細</span>
               <p className="location-text">{toiletInfo}</p>
             </div>
             <button
               className="reset-btn"
               onClick={() => {
                 setTimeLeft(null);
-                setSelectedLineStations([]);
               }}
             >
               完了・戻る
             </button>
           </div>
         ) : selectedLineStations.length > 0 ? (
-          /* 2. 駅一覧画面 */
-          <div className="station-list-overlay">
-            <h2 className="overlay-label">駅を選択してください</h2>
+          /* 2. 駅名リスト表示（ここが表示されている間、3番は消える） */
+          <div className="station-container">
+            <h2 className="section-label">駅を選択</h2>
             <div className="station-grid">
               {selectedLineStations.map((s) => (
                 <button

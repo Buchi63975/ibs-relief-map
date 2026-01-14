@@ -6,6 +6,7 @@ const API_BASE_URL =
 
 function App() {
   const [lines, setLines] = useState([]);
+  const [allStations, setAllStations] = useState([]);
   const [selectedLineStations, setSelectedLineStations] = useState([]);
   const [navigationData, setNavigationData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +17,11 @@ function App() {
       .then((res) => res.json())
       .then((data) => setLines(data))
       .catch((err) => console.error("路線取得エラー:", err));
+    // 全駅データも取得しておく（緊急ボタンで最寄り探索に使用）
+    fetch(`${API_BASE_URL}/api/stations`)
+      .then((res) => res.json())
+      .then((data) => setAllStations(data))
+      .catch((err) => console.error("全駅データ取得エラー:", err));
   }, []);
 
   // 路線クリック時の処理
@@ -33,19 +39,25 @@ function App() {
   };
 
   // 駅選択時のナビ開始処理
-  const startNavigation = async (station) => {
+  // station: 目的駅オブジェクト
+  // currentPos: { lat, lng } を渡すと「現在地」として使用（緊急ボタン用）
+  const startNavigation = async (station, currentPos = null) => {
     setIsLoading(true);
     try {
+      const payload = {
+        station_name: station.name,
+        // API expects `lat`/`lng` to be現在地, so优先して currentPos を使う
+        lat: currentPos ? currentPos.lat : station.lat,
+        lng: currentPos ? currentPos.lng : station.lng,
+        line_id: station.line_id,
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          station_name: station.name,
-          lat: station.lat,
-          lng: station.lng,
-          line_id: station.line_id,
-        }),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       setNavigationData({ ...data, stationName: station.name });
       setSelectedLineStations([]); // リストを閉じる
@@ -128,10 +140,55 @@ function App() {
             ))}
           </div>
         </div>
-        <button className="big-emergency-btn" disabled={isLoading}>
+        <button
+          className="big-emergency-btn"
+          onClick={handleEmergencyClick}
+          disabled={isLoading}
+        >
           {isLoading ? "読み込み中..." : "🚨 現在地から最寄りを検索"}
         </button>
       </div>
+    );
+  };
+
+  // 緊急ボタン: 現在地から最寄り駅を探索してナビを開始する
+  const handleEmergencyClick = () => {
+    if (!allStations || allStations.length === 0) {
+      alert("駅データを読み込み中です。少し待ってから再試行してください。");
+      return;
+    }
+
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        let minDist = Infinity;
+        let nearest = null;
+        allStations.forEach((s) => {
+          const d = Math.sqrt(
+            Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
+          );
+          if (d < minDist) {
+            minDist = d;
+            nearest = s;
+          }
+        });
+
+        if (nearest) {
+          // 現在地を渡してナビ開始
+          startNavigation(nearest, { lat: latitude, lng: longitude });
+        } else {
+          alert("最寄り駅が見つかりませんでした。");
+        }
+        setIsLoading(false);
+      },
+      (err) => {
+        alert(
+          "位置情報の取得に失敗しました。ブラウザの位置情報許可を確認してください。"
+        );
+        setIsLoading(false);
+      },
+      { enableHighAccuracy: true }
     );
   };
 

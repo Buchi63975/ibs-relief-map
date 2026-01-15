@@ -197,14 +197,8 @@ def gpt_prediction():
     nearest_station = find_nearest_station(lat, lng, exclude_station_name=station_name)
     nearest_station_name = nearest_station["name"] if nearest_station else "最寄り駅"
 
-    # 混雑度情報を取得
-    congestion_info = get_congestion_info()
-
     print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")
     print(f"[Nearest Station] {nearest_station_name}")
-    print(
-        f"[Congestion] Level {congestion_info['level']}: {congestion_info['description']}"
-    )
 
     prompt = f"""あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
 
@@ -214,7 +208,6 @@ def gpt_prediction():
 目的駅「{station_name}」（GPS）: 緯度{station_lat}, 経度{station_lng}
 計算済みの直線距離: {distance_km:.2f}km
 推定所要時間: {estimated_minutes}分
-現在の混雑度: {congestion_info["emoji"]} レベル{congestion_info["level"]}/10 - {congestion_info["description"]}
 
 【指示】
 1. ユーザーは「{nearest_station_name}」にいます
@@ -222,16 +215,13 @@ def gpt_prediction():
 3. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
 4. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
 5. {station_name}駅構内のトイレ位置も提示してください
-6. 混雑状況が悪い場合は、ルート提示の際に「人が多いので急いで移動してください」などの注意を加えてください
-7. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
+6. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
 
 【回答形式】必ずJSON形式のみで返してください
 {{
   "minutes": {estimated_minutes},
   "steps": ["ステップ1", "ステップ2", "ステップ3"],
   "toilet_info": "トイレの具体的な位置",
-  "congestion_emoji": "{congestion_info["emoji"]}",
-  "congestion_level": {congestion_info["level"]},
   "message": "15文字以内の励まし"
 }}
 """

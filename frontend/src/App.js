@@ -104,16 +104,6 @@ function App() {
         <div className="countdown-card">
           <h2 className="target-station">{navigationData.stationName}</h2>
           <div className="timer-display">{navigationData.minutes}分</div>
-          {navigationData.congestion_emoji && (
-            <div className="congestion-info">
-              <span className="congestion-emoji">
-                {navigationData.congestion_emoji}
-              </span>
-              <span className="congestion-label">
-                混雑度レベル {navigationData.congestion_level}/10
-              </span>
-            </div>
-          )}
           <div className="toilet-location-box">
             <span className="location-label">🚾 トイレ位置予測</span>
             <p className="location-text">{navigationData.toilet_info}</p>

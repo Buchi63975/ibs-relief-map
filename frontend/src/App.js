@@ -142,14 +142,16 @@ function App() {
                 key={s.id}
                 className="station-select-btn"
                 onClick={() => startNavigation(s)}
+                disabled={isLoading}
               >
-                {s.name}
+                {isLoading ? "⏳ 計算中..." : s.name}
               </button>
             ))}
           </div>
           <button
             className="close-list-btn"
             onClick={() => setSelectedLineStations([])}
+            disabled={isLoading}
           >
             キャンセル
           </button>

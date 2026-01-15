@@ -83,9 +83,15 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.station-select-btn:hover {
+.station-select-btn:hover:not(:disabled) {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.station-select-btn:disabled {
+  background: #5a5a5c;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* タイマーカード */
@@ -178,10 +184,17 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.reset-btn:hover,
-.close-list-btn:hover {
+.reset-btn:hover:not(:disabled),
+.close-list-btn:hover:not(:disabled) {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.reset-btn:disabled,
+.close-list-btn:disabled {
+  background: #888;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 @keyframes fadeIn {

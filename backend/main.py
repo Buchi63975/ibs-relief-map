@@ -47,6 +47,26 @@ def estimate_travel_minutes(distance_km):
     return max(1, minutes)
 
 
+def find_nearest_station(user_lat, user_lng, exclude_station_name=None):
+    """ユーザーの現在地から最寄り駅を探索"""
+    min_distance = float("inf")
+    nearest_station = None
+
+    for station in stations.STATIONS:
+        if exclude_station_name and station["name"] == exclude_station_name:
+            continue
+
+        distance = calculate_distance_km(
+            float(user_lat), float(user_lng), station["lat"], station["lng"]
+        )
+
+        if distance < min_distance:
+            min_distance = distance
+            nearest_station = station
+
+    return nearest_station
+
+
 @app.route("/")
 def serve():
     return send_from_directory(app.static_folder, "index.html")
@@ -128,21 +148,29 @@ def gpt_prediction():
     )
     estimated_minutes = estimate_travel_minutes(distance_km)
 
+    # 現在地から最寄り駅を検索
+    nearest_station = find_nearest_station(lat, lng, exclude_station_name=station_name)
+    nearest_station_name = nearest_station["name"] if nearest_station else "最寄り駅"
+
     print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")
+    print(f"[Nearest Station] {nearest_station_name}")
 
     prompt = f"""あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
 
 【重要な情報】
 ユーザーの現在地（GPS）: 緯度{lat}, 経度{lng}
+ユーザーに最も近い駅: {nearest_station_name}
 目的駅「{station_name}」（GPS）: 緯度{station_lat}, 経度{station_lng}
 計算済みの直線距離: {distance_km:.2f}km
 推定所要時間: {estimated_minutes}分
 
 【指示】
-1. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
-2. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
-3. ユーザーは現在地「緯度{lat}, 経度{lng}」から「{station_name}」へ移動します
-4. {station_name}駅構内のトイレ位置も提示してください
+1. ユーザーは「{nearest_station_name}」にいます
+2. ユーザーは「{station_name}」へ移動する必要があります
+3. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
+4. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
+5. {station_name}駅構内のトイレ位置も提示してください
+6. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
 
 【回答形式】必ずJSON形式のみで返してください
 {{

@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import google.generativeai as genai
 import stations
+import math
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
@@ -22,6 +23,28 @@ LINE_MAP = {
     "denentoshi": "odpt.Line:Tokyu.DenEnToshi",
     "hanzomon": "odpt.Line:TokyoMetro.Hanzomon",
 }
+
+
+# GPS座標間の距離を計算（ハバーサイン公式）
+def calculate_distance_km(lat1, lon1, lat2, lon2):
+    """緯度経度からキロメートル単位の距離を計算"""
+    R = 6371  # 地球半径（km）
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    )
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c
+
+
+def estimate_travel_minutes(distance_km):
+    """距離からおおよその所要時間（分）を推定"""
+    # 東京の平均的な公共交通速度は時速20km程度と仮定
+    minutes = int((distance_km / 20) * 60 + 5)
+    return max(1, minutes)
 
 
 @app.route("/")
@@ -99,34 +122,36 @@ def gpt_prediction():
         f"[GPT Prediction] User Location: ({lat}, {lng}), Destination: {station_name} ({station_lat}, {station_lng})"
     )
 
-    prompt = f"""
-    あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
-    
-    【重要】以下の座標は正確なGPS座標です。駅名ではなく、この座標値を基準に計算してください。
-    
-    【ユーザーの正確な現在地（GPS座標）】
-    緯度: {lat}
-    経度: {lng}
-    
-    【目的地の正確な座標（GPS座標）】
-    駅名: {station_name}
-    緯度: {station_lat}
-    経度: {station_lng}
-    
-    【指示】
-    1. GPS座標({lat}, {lng})からGPS座標({station_lat}, {station_lng})への直線距離を計算してください
-    2. 東京の公共交通を使用した場合の実際の移動時間を推定してください（直線距離の1.5倍程度が目安）
-    3. 駅名「{station_name}」は参考情報です。座標値を優先してください
-    4. ユーザーが今いる座標から、目的地座標への移動経路を提案してください
+    # 距離と所要時間を計算
+    distance_km = calculate_distance_km(
+        float(lat), float(lng), float(station_lat), float(station_lng)
+    )
+    estimated_minutes = estimate_travel_minutes(distance_km)
 
-    【回答形式】必ず以下のJSON形式のみで返してください。
-    {{
-      "minutes": 予測合計分(数値), 
-      "steps": ["ステップ1", "ステップ2", "ステップ3"],
-      "toilet_info": "駅構内トイレの具体的な場所",
-      "message": "15文字以内の励まし"
-    }}
-    """
+    print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")
+
+    prompt = f"""あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
+
+【重要な情報】
+ユーザーの現在地（GPS）: 緯度{lat}, 経度{lng}
+目的駅「{station_name}」（GPS）: 緯度{station_lat}, 経度{station_lng}
+計算済みの直線距離: {distance_km:.2f}km
+推定所要時間: {estimated_minutes}分
+
+【指示】
+1. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
+2. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
+3. ユーザーは現在地「緯度{lat}, 経度{lng}」から「{station_name}」へ移動します
+4. {station_name}駅構内のトイレ位置も提示してください
+
+【回答形式】必ずJSON形式のみで返してください
+{{
+  "minutes": {estimated_minutes},
+  "steps": ["ステップ1", "ステップ2", "ステップ3"],
+  "toilet_info": "トイレの具体的な位置",
+  "message": "15文字以内の励まし"
+}}
+"""
 
     try:
         response = model.generate_content(
@@ -140,7 +165,7 @@ def gpt_prediction():
         print(f"Gemini Error: {e}")
         return jsonify(
             {
-                "minutes": 5,
+                "minutes": estimated_minutes,
                 "steps": [f"{station_name}へ直行してください"],
                 "toilet_info": "駅到着後、案内図を見て最も近いトイレへ！",
                 "message": "諦めるな！お尻を締めろ！",

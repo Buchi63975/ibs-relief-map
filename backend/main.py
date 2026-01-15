@@ -94,6 +94,11 @@ def gpt_prediction():
     station_lat = data.get("station_lat")
     station_lng = data.get("station_lng")
 
+    # デバッグログ：受け取ったペイロードを出力
+    print(
+        f"[GPT Prediction] User Location: ({lat}, {lng}), Destination: {station_name} ({station_lat}, {station_lng})"
+    )
+
     prompt = f"""
     あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
     

@@ -48,18 +48,23 @@ function App() {
 
       // currentPosがない場合は、ユーザーの現在地を取得
       if (!finalPos) {
+        console.log("駅選択：現在地を取得中...");
         finalPos = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             (pos) => {
+              const userLat = pos.coords.latitude;
+              const userLng = pos.coords.longitude;
+              console.log(`取得した現在地: ${userLat}, ${userLng}`);
               resolve({
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
+                lat: userLat,
+                lng: userLng,
               });
             },
             (err) => {
+              console.error("位置情報取得エラー:", err);
               reject(err);
             },
-            { enableHighAccuracy: true }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
           );
         });
       }

@@ -5,6 +5,7 @@ from flask_cors import CORS
 import google.generativeai as genai
 import stations
 import math
+from datetime import datetime
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path="/")
 CORS(app)
@@ -67,7 +68,51 @@ def find_nearest_station(user_lat, user_lng, exclude_station_name=None):
     return nearest_station
 
 
-@app.route("/")
+# 時間帯ごとの混雑度パターン（0-10段階、10が最も混雑）
+CONGESTION_PATTERN = {
+    (7, 9): 8,  # 朝ラッシュ: 非常に混雑
+    (9, 11): 6,  # 朝から昼: やや混雑
+    (11, 14): 3,  # 昼間: 空いている
+    (14, 16): 4,  # 午後: 少し混雑
+    (16, 19): 7,  # 夕方ラッシュ: 混雑
+    (19, 21): 5,  # 夜間: やや混雑
+}
+
+
+def get_congestion_level():
+    """現在の時間帯から混雑度を取得"""
+    now = datetime.now()
+    hour = now.hour
+
+    for (start, end), level in CONGESTION_PATTERN.items():
+        if start <= hour < end:
+            return level, hour
+
+    # 上記以外の時間（21-7時）は空いている
+    return 2, hour
+
+
+def get_congestion_info():
+    """現在時刻の混雑度と説明文を計算"""
+    level, hour = get_congestion_level()
+
+    # 混雑度に基づく説明文
+    if level >= 8:
+        description = "非常に混雑している時間帯です"
+        emoji = "🔴"
+    elif level >= 6:
+        description = "混雑している時間帯です"
+        emoji = "🟠"
+    elif level >= 4:
+        description = "やや混雑している時間帯です"
+        emoji = "🟡"
+    else:
+        description = "比較的空いている時間帯です"
+        emoji = "🟢"
+
+    return {"level": level, "description": description, "emoji": emoji, "hour": hour}
+
+
 def serve():
     return send_from_directory(app.static_folder, "index.html")
 
@@ -152,8 +197,14 @@ def gpt_prediction():
     nearest_station = find_nearest_station(lat, lng, exclude_station_name=station_name)
     nearest_station_name = nearest_station["name"] if nearest_station else "最寄り駅"
 
+    # 混雑度情報を取得
+    congestion_info = get_congestion_info()
+
     print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")
     print(f"[Nearest Station] {nearest_station_name}")
+    print(
+        f"[Congestion] Level {congestion_info['level']}: {congestion_info['description']}"
+    )
 
     prompt = f"""あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
 
@@ -163,6 +214,7 @@ def gpt_prediction():
 目的駅「{station_name}」（GPS）: 緯度{station_lat}, 経度{station_lng}
 計算済みの直線距離: {distance_km:.2f}km
 推定所要時間: {estimated_minutes}分
+現在の混雑度: {congestion_info["emoji"]} レベル{congestion_info["level"]}/10 - {congestion_info["description"]}
 
 【指示】
 1. ユーザーは「{nearest_station_name}」にいます
@@ -170,13 +222,16 @@ def gpt_prediction():
 3. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
 4. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
 5. {station_name}駅構内のトイレ位置も提示してください
-6. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
+6. 混雑状況が悪い場合は、ルート提示の際に「人が多いので急いで移動してください」などの注意を加えてください
+7. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
 
 【回答形式】必ずJSON形式のみで返してください
 {{
   "minutes": {estimated_minutes},
   "steps": ["ステップ1", "ステップ2", "ステップ3"],
   "toilet_info": "トイレの具体的な位置",
+  "congestion_emoji": "{congestion_info["emoji"]}",
+  "congestion_level": {congestion_info["level"]},
   "message": "15文字以内の励まし"
 }}
 """

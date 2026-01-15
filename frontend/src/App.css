@@ -44,7 +44,13 @@
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.line-btn:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .line-btn:active {
@@ -72,6 +78,14 @@
   border-radius: 12px;
   font-size: 0.9rem;
   font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.station-select-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* タイマーカード */
@@ -103,6 +117,32 @@
   color: #0077b6;
 }
 
+.location-text {
+  margin: 10px 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.google-search-link {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #4285f4;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+
+.google-search-link:hover {
+  background: #1f73db;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.5);
+}
+
 .big-emergency-btn {
   background: linear-gradient(145deg, #ff4b4b, #e60000);
   color: white;
@@ -113,6 +153,14 @@
   font-weight: bold;
   border: none;
   margin-top: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 6px 16px rgba(255, 75, 75, 0.3);
+}
+
+.big-emergency-btn:hover:not(:disabled) {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 24px rgba(255, 75, 75, 0.5);
 }
 
 .reset-btn,
@@ -125,6 +173,15 @@
   border: none;
   font-weight: bold;
   margin-top: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.reset-btn:hover,
+.close-list-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
 }
 
 @keyframes fadeIn {

@@ -100,6 +100,18 @@ function App() {
           <div className="toilet-location-box">
             <span className="location-label">🚾 トイレ位置予測</span>
             <p className="location-text">{navigationData.toilet_info}</p>
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent(
+                navigationData.stationName +
+                  " トイレ " +
+                  navigationData.toilet_info
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="google-search-link"
+            >
+              🔍 Google で詳細を確認
+            </a>
           </div>
           <div className="route-guide">
             <span className="guide-title">🏃‍♂️ 最短ルート</span>

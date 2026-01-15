@@ -66,6 +66,8 @@ function App() {
 
       const payload = {
         station_name: station.name,
+        station_lat: station.lat,
+        station_lng: station.lng,
         lat: finalPos.lat,
         lng: finalPos.lng,
         line_id: station.line_id,

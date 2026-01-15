@@ -91,10 +91,23 @@ def gpt_prediction():
     lat = data.get("lat")
     lng = data.get("lng")
     station_name = data.get("station_name", "目的地")
+    station_lat = data.get("station_lat")
+    station_lng = data.get("station_lng")
 
     prompt = f"""
     あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
-    現在地（緯度:{lat}, 経度:{lng}）から【{station_name}】への移動と、駅構内のトイレ情報を教えてください。
+    
+    【ユーザーの現在地】
+    緯度: {lat}
+    経度: {lng}
+    
+    【目的地駅】
+    駅名: {station_name}
+    緯度: {station_lat}
+    経度: {station_lng}
+    
+    ユーザーの現在地から{station_name}駅への移動ルートを提案し、駅構内のトイレの位置を予測してください。
+    現在地座標({lat}, {lng})から目的駅座標({station_lat}, {station_lng})への距離を計算し、適切な移動時間を予測してください。
 
     【回答形式】必ず以下のJSON形式のみで返してください。
     {{

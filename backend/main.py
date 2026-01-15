@@ -117,6 +117,18 @@ def serve():
     return send_from_directory(app.static_folder, "index.html")
 
 
+@app.route("/")
+def index():
+    return serve()
+
+
+@app.route("/<path:path>")
+def serve_static(path):
+    if path and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return serve()
+
+
 @app.route("/api/lines")
 def lines():
     return jsonify(stations.ALL_LINES)

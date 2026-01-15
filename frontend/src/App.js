@@ -44,11 +44,30 @@ function App() {
   const startNavigation = async (station, currentPos = null) => {
     setIsLoading(true);
     try {
+      let finalPos = currentPos;
+
+      // currentPosがない場合は、ユーザーの現在地を取得
+      if (!finalPos) {
+        finalPos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              resolve({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+              });
+            },
+            (err) => {
+              reject(err);
+            },
+            { enableHighAccuracy: true }
+          );
+        });
+      }
+
       const payload = {
         station_name: station.name,
-        // API expects `lat`/`lng` to be現在地, so优先して currentPos を使う
-        lat: currentPos ? currentPos.lat : station.lat,
-        lng: currentPos ? currentPos.lng : station.lng,
+        lat: finalPos.lat,
+        lng: finalPos.lng,
         line_id: station.line_id,
       };
 
@@ -62,7 +81,9 @@ function App() {
       setNavigationData({ ...data, stationName: station.name });
       setSelectedLineStations([]); // リストを閉じる
     } catch (err) {
-      alert("AI診断に失敗しました");
+      alert(
+        "位置情報を取得できませんでした。ブラウザの位置情報許可を確認してください。"
+      );
     } finally {
       setIsLoading(false);
     }

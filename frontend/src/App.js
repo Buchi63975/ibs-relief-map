@@ -195,7 +195,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1 className="title">IBS Relief Map AI</h1>
+        <h1 className="title">TRTA</h1>
         {renderContent()}
       </header>
     </div>

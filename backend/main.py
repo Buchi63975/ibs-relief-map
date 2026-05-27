@@ -206,7 +206,7 @@ def gpt_prediction():
     estimated_minutes = estimate_travel_minutes(distance_km)
 
     # 現在地から最寄り駅を検索
-    nearest_station = find_nearest_station(lat, lng, exclude_station_name=station_name)
+    nearest_station = find_nearest_station(lat, lng)
     nearest_station_name = nearest_station["name"] if nearest_station else "最寄り駅"
 
     print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")

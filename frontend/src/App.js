@@ -107,11 +107,19 @@ function App() {
       });
 
       const data = await res.json();
-      setNavigationData({
+      const navigationResult = {
         ...data,
         stationName: station.name,
         track_info: payload.track_info,
-      });
+      };
+      if (
+        payload.track_info &&
+        payload.track_info.on_train &&
+        payload.track_info.estimated_minutes
+      ) {
+        navigationResult.minutes = payload.track_info.estimated_minutes;
+      }
+      setNavigationData(navigationResult);
       setSelectedLineStations([]); // リストを閉じる
     } catch (err) {
       alert(

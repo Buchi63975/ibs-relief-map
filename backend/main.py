@@ -474,10 +474,12 @@ def gpt_prediction():
     station_name = data.get("station_name", "目的地")
     station_lat = data.get("station_lat")
     station_lng = data.get("station_lng")
+    on_train = data.get("on_train", False)
+    estimated_arrival = data.get("estimated_arrival_minutes")
 
     # デバッグログ：受け取ったペイロードを出力
     print(
-        f"[GPT Prediction] User Location: ({lat}, {lng}), Destination: {station_name} ({station_lat}, {station_lng})"
+        f"[GPT Prediction] User Location: ({lat}, {lng}), Destination: {station_name} ({station_lat}, {station_lng}), on_train: {on_train}, estimated_arrival: {estimated_arrival}"
     )
 
     # 距離と所要時間を計算
@@ -493,6 +495,9 @@ def gpt_prediction():
     print(f"[Distance] {distance_km:.2f}km, Estimated: {estimated_minutes}min")
     print(f"[Nearest Station] {nearest_station_name}")
 
+    extra_arrival = (
+        f"推定到着時間: {estimated_arrival}分\n" if estimated_arrival else ""
+    )
     prompt = f"""あなたはIBS（過敏性腸症候群）で苦しむユーザーを救う、最高峰の駅構内コンシェルジュです。
 
 【重要な情報】
@@ -501,14 +506,15 @@ def gpt_prediction():
 目的駅「{station_name}」（GPS）: 緯度{station_lat}, 経度{station_lng}
 計算済みの直線距離: {distance_km:.2f}km
 推定所要時間: {estimated_minutes}分
-
+{extra_arrival}
 【指示】
-1. ユーザーは「{nearest_station_name}」にいます
-2. ユーザーは「{station_name}」へ移動する必要があります
-3. 上記の推定所要時間{estimated_minutes}分を基準に回答してください
-4. より短いルートを見つけた場合のみ、それより少ない時間を提示できます
-5. {station_name}駅構内のトイレ位置も提示してください
-6. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください
+1. 現在の所要時間は必ずユーザーの現在地から目的駅までのものとして扱ってください。
+2. 最寄り駅は参考情報として扱い、時間計算の基準にはしないでください。
+3. グローバルに提供されている推定到着時間がある場合は、それを優先してください。
+4. 上記の推定所要時間{estimated_minutes}分を基準に回答してください。
+5. より短いルートを見つけた場合のみ、それより少ない時間を提示できます。
+6. {station_name}駅構内のトイレ位置も提示してください。
+7. 絶対に、「{station_name}」の別の駅からの経路を提示しないでください。
 
 【回答形式】必ずJSON形式のみで返してください
 {{

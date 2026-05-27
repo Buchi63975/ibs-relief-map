@@ -113,6 +113,287 @@ def get_congestion_info():
     return {"level": level, "description": description, "emoji": emoji, "hour": hour}
 
 
+def _deg_to_km_coords(lat, lon, ref_lat):
+    """緯度経度を簡易的に平面座標(km)に変換（小領域向け）"""
+    # 1度の緯度差はおよそ110.574 km、経度は緯度によって変わる
+    km_per_deg_lat = 110.574
+    km_per_deg_lon = 111.320 * math.cos(math.radians(ref_lat))
+    x = (lon) * km_per_deg_lon
+    y = (lat) * km_per_deg_lat
+    return x, y
+
+
+def point_segment_distance_km(lat, lon, lat1, lon1, lat2, lon2):
+    """点から線分への最短距離を km 単位で返す（小領域近似）"""
+    # 基準緯度に両端の平均を使う
+    ref_lat = (lat1 + lat2 + lat) / 3.0
+    px, py = _deg_to_km_coords(lat, lon, ref_lat)
+    x1, y1 = _deg_to_km_coords(lat1, lon1, ref_lat)
+    x2, y2 = _deg_to_km_coords(lat2, lon2, ref_lat)
+
+    dx = x2 - x1
+    dy = y2 - y1
+    if dx == 0 and dy == 0:
+        return math.hypot(px - x1, py - y1)
+
+    # プロジェクション t
+    t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+    t = max(0.0, min(1.0, t))
+    proj_x = x1 + t * dx
+    proj_y = y1 + t * dy
+    return math.hypot(px - proj_x, py - proj_y)
+
+
+def sort_stations_by_order(line_id):
+    """路線の駅を id の数値部分でソートして返す"""
+    filtered = [s for s in stations.STATIONS if s["line_id"] == line_id]
+
+    def keyfn(s):
+        # id の末尾の数値を取り出す（例: y01 -> 1）
+        import re
+
+        m = re.search(r"(\d+)$", s.get("id", ""))
+        return int(m.group(1)) if m else 0
+
+    return sorted(filtered, key=keyfn)
+
+
+def detect_on_train(user_lat, user_lng, threshold_km=0.05):
+    """ユーザーの位置が線路上（線分に近い）か検出。近い線分とその両端駅インデックスを返す"""
+    best = None
+    for line in stations.ALL_LINES:
+        line_id = line["id"]
+        ordered = sort_stations_by_order(line_id)
+        for i in range(len(ordered) - 1):
+            s1 = ordered[i]
+            s2 = ordered[i + 1]
+            d = point_segment_distance_km(
+                user_lat, user_lng, s1["lat"], s1["lng"], s2["lat"], s2["lng"]
+            )
+            if best is None or d < best["distance"]:
+                best = {
+                    "distance": d,
+                    "line_id": line_id,
+                    "from_index": i,
+                    "to_index": i + 1,
+                    "from_station": s1,
+                    "to_station": s2,
+                }
+
+    if best and best["distance"] <= threshold_km:
+        return best
+    return None
+
+
+def estimate_minutes_along_line(
+    user_lat, user_lng, line_id, from_index, to_index, target_station_id
+):
+    """現在位置が (from_index -> to_index) の区間にあるとき、target_station_id までの所要分数を推定する"""
+    ordered = sort_stations_by_order(line_id)
+    # find target index
+    target_idx = next(
+        (idx for idx, s in enumerate(ordered) if s["id"] == target_station_id), None
+    )
+    if target_idx is None:
+        return None, ordered
+
+    # decide direction: if target_idx >= to_index => forward direction (increasing idx)
+    if target_idx >= to_index:
+        indices = list(range(to_index, target_idx + 1))
+        # distance from user to station at to_index (partial)
+        first_segment = calculate_distance_km(
+            user_lat, user_lng, ordered[to_index]["lat"], ordered[to_index]["lng"]
+        )
+    else:
+        # going backwards
+        indices = list(range(from_index, target_idx - 1, -1))
+        first_segment = calculate_distance_km(
+            user_lat, user_lng, ordered[from_index]["lat"], ordered[from_index]["lng"]
+        )
+
+    # sum distances along remaining station-to-station segments
+    total_km = first_segment
+    if len(indices) >= 2:
+        for i in range(len(indices) - 1):
+            a = ordered[indices[i]]
+            b = ordered[indices[i + 1]]
+            total_km += calculate_distance_km(a["lat"], a["lng"], b["lat"], b["lng"])
+
+    # 平均列車速度（停車込み）を仮定（km/h）
+    train_speed_kmh = 40.0
+    travel_minutes = (total_km / train_speed_kmh) * 60
+
+    # 停車時間（各途中駅で30秒=0.5分程度）
+    stops = max(
+        0, abs(target_idx - (to_index if target_idx >= to_index else from_index))
+    )
+    dwell_minutes = stops * 0.5
+
+    estimated = int(math.ceil(travel_minutes + dwell_minutes))
+    return estimated, ordered
+
+
+@app.route("/api/estimate-arrival", methods=["POST"])
+def estimate_arrival():
+    data = request.json or {}
+    lat = data.get("lat")
+    lng = data.get("lng")
+    target_station_id = data.get("station_id")
+
+    if lat is None or lng is None or not target_station_id:
+        return jsonify({"error": "lat, lng, station_id required"}), 400
+
+    detected = detect_on_train(float(lat), float(lng))
+    if not detected:
+        return jsonify({"on_train": False})
+
+    # まずODPTの時刻表で推定を試みる
+    timetable_estimate = None
+    if ODPT_API_KEY and detected["line_id"] in LINE_MAP:
+        try:
+            timetable_estimate = fetch_timetable_estimate(detected, target_station_id)
+        except Exception as e:
+            print(f"ODPT timetable fetch error: {e}")
+
+    # ODPT推定が得られなければ距離ベースの推定にフォールバック
+    if timetable_estimate is None:
+        est_minutes, ordered = estimate_minutes_along_line(
+            float(lat),
+            float(lng),
+            detected["line_id"],
+            detected["from_index"],
+            detected["to_index"],
+            target_station_id,
+        )
+    else:
+        est_minutes = timetable_estimate
+
+    response = {
+        "on_train": True,
+        "line_id": detected["line_id"],
+        "from_station": detected["from_station"],
+        "to_station": detected["to_station"],
+        "distance_to_track_km": detected["distance"],
+        "estimated_minutes": est_minutes,
+        "timetable_used": timetable_estimate is not None,
+    }
+    return jsonify(response)
+
+
+def fetch_timetable_estimate(detected, target_station_id):
+    """ODPT の時刻表から target_station_id までの次の到着時間を推定（分）
+
+    戻り値: 推定分（int）または None
+    """
+    line_id = detected["line_id"]
+    odpt_line = LINE_MAP.get(line_id)
+    if not odpt_line:
+        return None
+
+    url = "https://api.odpt.org/api/v4/odpt:TrainTimetable"
+    params = {"odpt:railway": odpt_line, "acl:consumerKey": ODPT_API_KEY}
+    timeout_seconds = 10
+    resp = requests.get(url, params=params, timeout=timeout_seconds)
+    resp.raise_for_status()
+    api_data = resp.json()
+
+    # 今日の時刻を取得（ローカル時刻）
+    now = datetime.now()
+
+    # 我々のローカル駅データで target_station の name を取得
+    target_station = next(
+        (s for s in stations.STATIONS if s["id"] == target_station_id), None
+    )
+    if not target_station:
+        return None
+    target_name = target_station.get("name")
+
+    # ODPT のレスポンスは複数形式があり得るため、柔軟に探索する
+    candidate_minutes = []
+
+    for item in api_data:
+        # 各アイテム内の辞書やリストを再帰的に探索して、駅名と時刻を含む構造を探す
+        def find_station_entries(obj):
+            entries = []
+            if isinstance(obj, dict):
+                # 駅情報っぽい辞書を検査
+                if ("odpt:station" in obj) or (
+                    "station" in obj
+                    and ("arrivalTime" in obj or "departureTime" in obj)
+                ):
+                    entries.append(obj)
+                for v in obj.values():
+                    entries.extend(find_station_entries(v))
+            elif isinstance(obj, list):
+                for v in obj:
+                    entries.extend(find_station_entries(v))
+            return entries
+
+        entries = find_station_entries(item)
+        if not entries:
+            continue
+
+        # entries は駅ごとの辞書のリスト。各辞書に時刻があれば target を探す
+        for e in entries:
+            # 駅名をいくつかのキーで比較
+            names = []
+            if "odpt:station" in e:
+                names.append(e.get("odpt:station"))
+            if "station" in e:
+                names.append(e.get("station"))
+            if "odpt:stationTitle" in e:
+                names.append(e.get("odpt:stationTitle"))
+            # 名称の正規化
+            names = [str(n) for n in names if n]
+            if not any(target_name in n or n in target_name for n in names):
+                continue
+
+            # 時刻キーを探す
+            time_keys = [k for k in e.keys() if "Time" in k or "time" in k.lower()]
+            for tk in time_keys:
+                tval = e.get(tk)
+                if not tval:
+                    continue
+                # tval が HH:MM:SS 形式かリストか辞書かに対応
+                if isinstance(tval, str):
+                    try:
+                        hhmm = tval.split("+")[0]
+                        dt = datetime.strptime(hhmm, "%H:%M:%S").replace(
+                            year=now.year, month=now.month, day=now.day
+                        )
+                    except Exception:
+                        continue
+                    delta = (dt - now).total_seconds() / 60.0
+                    if delta < -30:
+                        # 深夜のスケジュールで前日の可能性 -> 翌日扱い
+                        dt = dt.replace(day=now.day + 1)
+                        delta = (dt - now).total_seconds() / 60.0
+                    if delta >= -1:
+                        candidate_minutes.append(delta)
+                elif isinstance(tval, list):
+                    for sub in tval:
+                        if isinstance(sub, str):
+                            try:
+                                dt = datetime.strptime(
+                                    sub.split("+")[0], "%H:%M:%S"
+                                ).replace(year=now.year, month=now.month, day=now.day)
+                                delta = (dt - now).total_seconds() / 60.0
+                                if delta < -30:
+                                    dt = dt.replace(day=now.day + 1)
+                                    delta = (dt - now).total_seconds() / 60.0
+                                if delta >= -1:
+                                    candidate_minutes.append(delta)
+                            except Exception:
+                                continue
+
+    if not candidate_minutes:
+        return None
+
+    # 最小の正数を返す（分）
+    best_min = int(math.ceil(min(m for m in candidate_minutes if m is not None)))
+    return best_min
+
+
 def serve():
     return send_from_directory(app.static_folder, "index.html")
 

@@ -64,7 +64,7 @@ function App() {
               console.error("位置情報取得エラー:", err);
               reject(err);
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
           );
         });
       }
@@ -76,7 +76,29 @@ function App() {
         lat: finalPos.lat,
         lng: finalPos.lng,
         line_id: station.line_id,
+        station_id: station.id,
       };
+
+      // まずは乗車判定と到着推定を問い合わせ
+      try {
+        const estRes = await fetch(`${API_BASE_URL}/api/estimate-arrival`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lat: finalPos.lat,
+            lng: finalPos.lng,
+            station_id: station.id,
+          }),
+        });
+        const estData = await estRes.json();
+        // estData が on_train true を返したら結果を含めて GPT 予測を呼ぶ
+        payload.on_train = estData.on_train;
+        payload.estimated_arrival_minutes = estData.estimated_minutes;
+        payload.detected_line_id = estData.line_id;
+        payload.track_info = estData;
+      } catch (e) {
+        console.warn("estimate-arrival error", e);
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/gpt-prediction`, {
         method: "POST",
@@ -85,11 +107,15 @@ function App() {
       });
 
       const data = await res.json();
-      setNavigationData({ ...data, stationName: station.name });
+      setNavigationData({
+        ...data,
+        stationName: station.name,
+        track_info: payload.track_info,
+      });
       setSelectedLineStations([]); // リストを閉じる
     } catch (err) {
       alert(
-        "位置情報を取得できませんでした。ブラウザの位置情報許可を確認してください。"
+        "位置情報を取得できませんでした。ブラウザの位置情報許可を確認してください。",
       );
     } finally {
       setIsLoading(false);
@@ -104,6 +130,12 @@ function App() {
         <div className="countdown-card">
           <h2 className="target-station">{navigationData.stationName}</h2>
           <div className="timer-display">{navigationData.minutes}分</div>
+          {navigationData.track_info && navigationData.track_info.on_train && (
+            <div className="on-train-box">
+              🚆 乗車予測: {navigationData.track_info.line_id}／推定到着{" "}
+              {navigationData.track_info.estimated_minutes}分
+            </div>
+          )}
           <div className="toilet-location-box">
             <span className="location-label">🚾 トイレ位置予測</span>
             <p className="location-text">{navigationData.toilet_info}</p>
@@ -111,7 +143,7 @@ function App() {
               href={`https://www.google.com/search?q=${encodeURIComponent(
                 navigationData.stationName +
                   " トイレ " +
-                  navigationData.toilet_info
+                  navigationData.toilet_info,
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -208,7 +240,7 @@ function App() {
         let nearest = null;
         allStations.forEach((s) => {
           const d = Math.sqrt(
-            Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2)
+            Math.pow(s.lat - latitude, 2) + Math.pow(s.lng - longitude, 2),
           );
           if (d < minDist) {
             minDist = d;
@@ -226,11 +258,11 @@ function App() {
       },
       (err) => {
         alert(
-          "位置情報の取得に失敗しました。ブラウザの位置情報許可を確認してください。"
+          "位置情報の取得に失敗しました。ブラウザの位置情報許可を確認してください。",
         );
         setIsLoading(false);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   };
 
